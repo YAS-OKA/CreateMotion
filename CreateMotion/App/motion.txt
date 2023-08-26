@@ -1,0 +1,6 @@
+Rotate,larm,180,1
+
+Rotate,rarm,180,0.5
+
+Rotate,larm,-180,1
+Rotate,rarm,-180,1
