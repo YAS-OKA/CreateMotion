@@ -115,8 +115,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CreatMotionsJson.cpp" />
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="MyEditor\CreatMotionsJson.cpp" />
+    <ClCompile Include="MyEditor\MyEditor.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -317,7 +318,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimationSystem.h" />
-    <ClInclude Include="CreatMotionsJson.h" />
+    <ClInclude Include="MyEditor\CreatMotionsJson.h" />
+    <ClInclude Include="MyEditor\Entity.hpp" />
+    <ClInclude Include="MyEditor\MyEditor.h" />
+    <ClInclude Include="MyEditor\__init__.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>

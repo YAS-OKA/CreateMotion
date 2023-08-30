@@ -1,0 +1,45 @@
+﻿{
+  "Body": {
+    "body": {
+      "Parent": "__Main__",
+      "Position": "(400,300)",
+      "RotateCenter": "(0,0)",
+      "TexturePath": "body.bmp",
+      "Z": 0,
+      "Scale": 1
+    },
+    "larm": {
+      "Parent": "body",
+      "Position": "(-27.5,0)",
+      "RotateCenter": "(10,0)",
+      "TexturePath": "larm.bmp",
+      "Z": -10,
+      "Scale": 1
+    },
+    "rarm": {
+      "Parent": "body",
+      "Position": "(27.5,0)",
+      "RotateCenter": "(-10,0)",
+      "TexturePath": "rarm.bmp",
+      "Z": -10,
+      "Scale": 1
+    },
+    "lhand": {
+      "Parent": "larm",
+      "Position": "(-10,12.5)",
+      "RotateCenter": "(0,-10)",
+      "TexturePath": "lhand.bmp",
+      "Z": -20,
+      "Scale": 1
+    },
+    "rhand": {
+      "Parent": "rarm",
+      "Position": "(10,12.5)",
+      "RotateCenter": "(0,-10)",
+      "TexturePath": "rhand.bmp",
+      "Z": -20,
+      "Scale": 1
+    }
+
+  }
+}

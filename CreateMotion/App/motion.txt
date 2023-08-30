@@ -1,6 +1,12 @@
-Rotate,larm,180,1
+@time,10
+Rotate,body,-360,@time
+Rotate,rarm,-360,@time
+Rotate,lhand,-360,@time
 
-Rotate,rarm,180,0.5
+#RotateTest
+Rotate,body,-360,1
 
-Rotate,larm,-180,1
-Rotate,rarm,-180,1
+Rotate,larm,360,1
+
+#RotateToTest
+RotateTo,larm,45,1,true

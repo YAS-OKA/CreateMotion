@@ -144,7 +144,10 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CreatMotionsJson.cpp">
+    <ClCompile Include="MyEditor\CreatMotionsJson.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEditor\MyEditor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -782,7 +785,16 @@
     <ClInclude Include="AnimationSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CreatMotionsJson.h">
+    <ClInclude Include="MyEditor\CreatMotionsJson.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEditor\MyEditor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEditor\Entity.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEditor\__init__.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

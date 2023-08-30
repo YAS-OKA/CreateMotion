@@ -1,0 +1,20 @@
+﻿{
+  "Body": {
+    "body": {
+      "Parent": "__Main__",
+      "Position": "(400, 300)",
+      "RotateCenter": "(0,0)",
+      "Scale": 1.0,
+      "TexturePath": "CharacterImages/timkun/body.bmp",
+      "Z": -10.0
+    },
+    "larm": {
+      "Parent": "body",
+      "Position": "(-27.84711, 2.30584)",
+      "RotateCenter": "(10.4649, -0.53211)",
+      "Scale": 1.0,
+      "TexturePath": "CharacterImages/timkun/larm.bmp",
+      "Z": -10.0
+    }
+  }
+}

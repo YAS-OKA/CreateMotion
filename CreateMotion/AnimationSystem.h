@@ -15,7 +15,11 @@ public:
 	Movable(const Vec2& pos, const SizeF& size, const Vec2& rotatePos = {}, double angle = 0_deg, double z = 0, const ColorF& color = ColorF{ 1 }, bool mirror = false)
 		:pos{ pos }, size{ size }, angle{ angle }, z{ z }, rotatePos{ rotatePos }, color{ color }, mirror{ mirror } {}
 
+	Movable() {}
+
 	virtual void draw()const = 0;
+
+	virtual void drawDebug()const {}
 };
 
 class Character;
@@ -35,19 +39,14 @@ public:
 class Motion :public Move {
 public:
 
-	Array<Move*>list;
+	Array<std::shared_ptr<Move>>list;
 
 	double speed = 1;
 	bool parallel = false;
 	bool loop = false;
 
-	Motion(const Array<Move*>& list, bool parallel = false, bool loop = false)
-		:list{ list }, parallel{ parallel }, loop{ loop } {
-
-
-	}
-
-	Motion() {}
+	Motion(bool parallel = false, bool loop = false)
+		:parallel{ parallel }, loop{ loop } {}
 
 	void clear() {
 		list.clear();
@@ -63,7 +62,7 @@ public:
 	}
 
 	void add(Move* move) {
-		list << move;
+		list << std::shared_ptr<Move>(move);
 	}
 
 	void start(Character* character)override {
@@ -74,13 +73,11 @@ public:
 			}
 		}
 		else {
-			list[0]->start(character);
+			if (list)list[0]->start(character);
 		}
 	}
 
 	void update(Character* character, double t = Scene::DeltaTime())override {
-
-		Print << list.size();
 
 		if (parallel) {
 
@@ -121,7 +118,7 @@ public:
 
 private:
 	size_t index = 0;
-	bool active = false;
+	bool active = true;
 
 	bool checkIndex() {
 		return index < list.size();
@@ -149,6 +146,10 @@ public:
 		movables.each([](Movable* movable) {movable->draw(); });
 	}
 
+	void drawDebug()const {
+		movables.each([](Movable* movable) {movable->drawDebug(); });
+	}
+
 	void clear() {
 		movables.clear();
 	}
@@ -164,8 +165,10 @@ public:
 
 	Mat3x2 mat = Graphics2D::GetLocalTransform();
 
-	Joint(const Vec2& center, const Vec2& rotatePos, const String& textureName,double z=0)
-		:Movable{ center,TextureAsset{textureName}.size(),rotatePos,0_deg,0 }, textureName{ textureName } {}
+	Joint() {}
+
+	Joint(const Vec2& center, const Vec2& Pos, const String& textureName, double z, double scale)
+		:Movable{ center,TextureAsset{textureName}.size() * scale,rotatePos,0_deg,z }, textureName{ textureName } {}
 
 	void add(Joint* joint) {
 		joints << joint;
@@ -182,11 +185,14 @@ public:
 	}
 
 	void draw()const override {
-		{
-			Transformer2D t{ mat };
-			TextureAsset{ textureName }.resized(size).drawAt({ 0,0 }, color);
-			(rotatePos).asCircle(2).draw(Palette::Red);
-		}
+		Transformer2D t{ mat };
+		TextureAsset{ textureName }.resized(size).drawAt({ 0,0 }, color);
+	}
+
+	void drawDebug()const override {
+		Transformer2D t{ mat };
+		(rotatePos).asCircle(2).draw(Palette::Red);
+		RectF{ Arg::center(0,0),size }.drawFrame(1, Palette::Red);
 	}
 
 	double getMaxY() {
@@ -202,9 +208,14 @@ public:
 class Character {
 public:
 
-	struct Body {
-		std::unique_ptr<Joint>joint;
+	class Body {
+	public:
+		Joint joint;
 		String parentName;
+
+		Body(const Joint& joint, const String& parentName) :joint{ joint }, parentName{ parentName } {}
+
+		Body() {}
 	};
 
 	Array<Motion>motions;
@@ -225,37 +236,38 @@ public:
 		{
 			String name = body.key;
 			const auto& object = json[U"Body"][name];
-			set(name, object[U"Parent"].getString(), object[U"Position"].get<Vec2>(), object[U"RotateCenter"].get<Vec2>(), object[U"TexturePath"].getString(), object[U"Z"].get<double>());
+			set(name, object[U"Parent"].getString(), object[U"Position"].get<Vec2>(), object[U"RotateCenter"].get<Vec2>(), object[U"TexturePath"].getString(), object[U"Z"].get<double>(), object[U"Scale"].get<double>());
 		}
 		complete();
 	}
 
-	void set(const String& name, const String& parentName, const Vec2& center, const Vec2& rotatePos, const String& textureName,double z) {
+	void set(const String& name, const String& parentName, const Vec2& center, const Vec2& rotatePos, const String& textureName, double z, double scale) {
 		TextureAsset::Register(textureName, textureName);
-		table[name] = { std::make_unique<Joint>(center, rotatePos, textureName,z),parentName };
+		table[name] = Body{ Joint{center, rotatePos, textureName,z,scale},parentName };
 	}
 
 	void complete() {
 		for (auto it = table.begin(); it != table.end(); ++it)
 		{
 			if (it->second.parentName == U"__Main__") {
-				joint = it->second.joint.get();
+				joint = &(it->second.joint);
 			}
-			else {
-				if (table.contains(it->second.parentName)) {
-					table[it->second.parentName].joint->add(it->second.joint.get());
-				}
-			}
+			else if (table.contains(it->second.parentName)) {
+				table[it->second.parentName].joint.add(&(it->second.joint));
+			}		
 		}
 	}
 
-	void add(const String& name, const String& parentName, const Vec2& center, const Vec2& rotatePos, const String& textureName) {
-		table[name] = { std::make_unique<Joint>(center, rotatePos, textureName),parentName };
-		table[parentName].joint->add(table[name].joint.get());
+	void setPos(const Vec2& pos) {
+		joint->pos = pos;
 	}
 
-	void update(double dt=Scene::DeltaTime()) {
-		
+	void setX(double x) {
+		joint->pos.x = x;
+	}
+
+	void update(double dt = Scene::DeltaTime()) {
+
 		for (auto it = motions.begin(); it != motions.end();)
 		{
 			if (not it->isActive())
@@ -264,10 +276,11 @@ public:
 			}
 			else
 			{
-				it->update(this,dt);
+				it->update(this, dt);
 				++it;
 			}
 		}
+
 		Transformer2D trans{ Mat3x2::Scale(Cos(angle) * scale,scale,joint->pos) };
 		joint->update();
 	}
@@ -277,14 +290,18 @@ public:
 		motions.back().start(this);
 	}
 
+	void clearMotion() {
+		motions.clear();
+	}
+
 	Joint* get(const String& name) {
-		return table[name].joint.get();
+		return &table[name].joint;
 	}
 
 	void setDrawManager(DrawManager* manager) {
 		for (auto it = table.begin(); it != table.end(); ++it)
 		{
-			manager->add(it->second.joint.get());
+			manager->add(&it->second.joint);
 		}
 	}
 
@@ -296,7 +313,7 @@ public:
 		double max = -Math::Inf;
 		for (auto it = table.begin(); it != table.end(); ++it)
 		{
-			max = Max(it->second.joint->getMaxY(), max);
+			max = Max(it->second.joint.getMaxY(), max);
 		}
 		return max;
 	}
@@ -314,7 +331,7 @@ public:
 		time = 0;
 	}
 
-	virtual void update(Character* character,double t = Scene::DeltaTime())override = 0;
+	virtual void update(Character* character, double t = Scene::DeltaTime())override = 0;
 
 	double calTime(double dt) {
 		//もし制限時間を超えるなら
