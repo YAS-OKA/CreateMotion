@@ -11,6 +11,7 @@ MyEditor::MyEditor()
 	AddComponent<mj::StartMotion>();
 	AddComponent<mj::SaveParts>();
 	AddComponent<mj::ErasePartsOperate>();
+	AddComponent<mj::LoadJson>();
 }
 
 void MyEditor::update(double dt)

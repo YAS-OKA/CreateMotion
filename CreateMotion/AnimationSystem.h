@@ -167,7 +167,7 @@ public:
 
 	Joint() {}
 
-	Joint(const Vec2& center, const Vec2& Pos, const String& textureName, double z, double scale)
+	Joint(const Vec2& center, const Vec2& rotatePos, const String& textureName, double z, double scale)
 		:Movable{ center,TextureAsset{textureName}.size() * scale,rotatePos,0_deg,z }, textureName{ textureName } {}
 
 	void add(Joint* joint) {

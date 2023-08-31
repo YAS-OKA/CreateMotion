@@ -17,40 +17,78 @@ public:
 		character->get(target)->angle += dt * rad / timelim;
 	}
 };
-
+//0~360
 double seikika(double theta) {
 	if (0 <= theta)return Fmod(theta, 360_deg);//正規化
 	else return 360_deg + Fmod(theta, 360_deg);
 }
+/// @brief 符号判定
+/// @param A 
+/// @return Aが負なら-1　Aが正なら+1
+double sign(double A) {
+	return (A > 0) - (A < 0);
+}
 
 class RotateTo :public Rotate {
-public:
 	int32 direction = 0;
-
+public:
 	RotateTo(const String& target, double rad, double timelim, bool clockWise) :Rotate{ target,rad,timelim }
 	{
+		rad = seikika(rad);
 		if (clockWise)direction = 1; else direction = -1;
 	}
-
 	RotateTo(const String& target, double rad, double timelim) :Rotate{ target,rad,timelim }
 	{
-
+		rad = seikika(rad);
 	}
-
 	void start(Character* character)override {
 		//character->get(target)->angle = rad;
 		if(timelim==0)character->get(target)->angle = rad;
+
+		double delta = rad - seikika(character->get(target)->angle);
 		if (direction == 0)
 		{
-			if (abs(character->get(target)->angle - rad) < 180_deg)direction = -1;
-			else direction = 1;
+			//rad = rad - seikika(character->get(target)->angle);
+			abs(delta) > 180_deg ? direction = sign(delta) * (-1) : direction = sign(delta);
+		}
+
+		if (direction > 0)
+		{
+			//時計回り
+			delta < 0 ? rad = 360_deg + delta : rad = delta;
+		}
+		else
+		{
+			//反時計回り
+			delta > 0 ? rad = delta - 360_deg : rad = delta;
+		}
+				
+	}
+	//Rotateのupdateを使う
+};
+/// @brief 等速直線で移動する
+class Translate :public TimeMove
+{
+public:
+	Vec2 dp;
+	String target;
+
+	Translate(const String& target, Vec2 deltaPos, double time)
+		:TimeMove{ time }, dp(deltaPos) {};
+
+	void start(Character* character)override
+	{
+		if (timelim == 0)
+		{
+			character->get(target)->pos += dp;
+			return;
 		}
 	}
 
-	void update(Character* character, double dt = Scene::DeltaTime())override
-	{
+	void update(Character* character, double dt = Scene::DeltaTime())override {
 		dt = calTime(dt);
-		character->get(target)->angle = direction*rad * (time/timelim-1);
+		if (timelim == 0)return;
+		character->get(target)->pos += dt * dp / timelim;
 	}
 };
 
@@ -118,9 +156,13 @@ public:
 		moveResolver[U"Rotate"] = [](const Array<String>& list) {return new Rotate{ list[1],Parse<double>(list[2]) * 1_deg,Parse<double>(list[3]) }; };
 		moveResolver[U"Wait"] = [](const Array<String>& list) {return new Wait{ Parse<double>(list[1]) }; };
 		moveResolver[U"RotateTo"] = [](const Array<String>& list) {
-			if (list.size() <= 4)return new RotateTo(list[1], Parse<double>(list[2]) * 1_deg, Parse<double>(list[3]));
-			else return new RotateTo(list[1], Parse<double>(list[2]) * 1_deg, Parse<double>(list[3]), Parse<bool>(list[4]));
+			if (list.size() <= 3)return new RotateTo(list[1], Parse<double>(list[2]) * 1_deg, 0);//0秒で指定した角度へ
+			else if (list.size() <= 4)return new RotateTo(list[1], Parse<double>(list[2]) * 1_deg, Parse<double>(list[3]));//指定した秒数で指定した角度へ
+			else return new RotateTo(list[1], Parse<double>(list[2]) * 1_deg, Parse<double>(list[3]), Parse<bool>(list[4]));//指定した秒数で指定された方向に指定された角度へ
 		};
+		//現在地から指定した分の移動
+		moveResolver[U"Move"] = [](const Array<String>& list) {return new Translate(list[1], Vec2{ Parse<double>(list[2]),Parse<double>(list[3]) }, Parse<double>(list[4])); };
+
 	}
 
 	Motion LoadMotion(String region = U"") {
@@ -216,7 +258,7 @@ void Main()
 	mj::EditorsCamera camera;
 	camera.start();
 
-	double UiStartY = 130;
+	double UiStartY = 90;
 	bool drawFlg = true, debugFlg = false;
 	bool jsonOk = false, motionOk = false;
 	bool touchGround = false;
@@ -232,17 +274,17 @@ void Main()
 			continue;
 		}
 
-		if (SimpleGUI::Button(U"モデルエディタ画面へ", { 10,10 }))
+		if (SimpleGUI::Button(U"モデルエディタ画面へ", { 10,Scene::Height()-50 }))
 		{
 			editor.working = true;
 		}
-		if (MotionSelect(U"モデル", {10,50}, JsonPath,FileFilter::JSON()))
+		if (MotionSelect(U"モデル読み込み", {10,10}, JsonPath,FileFilter::JSON()))
 		{
 			//モーションの画面に初めて移ったときの処理
 			if(JsonPath)character = Character{ JSON::Load(*JsonPath),2 };
 			character.setDrawManager(&manager);
 		}
-		if (MotionSelect(U"スクリプト", {10,90}, MotionPath,FileFilter::Text()))
+		if (MotionSelect(U"スクリプト", {10,50}, MotionPath,FileFilter::Text()))
 		{
 			if (MotionPath)loader = MotionLoader{ CSV{*MotionPath} };
 			motion = loader.LoadMotion();

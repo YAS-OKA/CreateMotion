@@ -42,7 +42,7 @@ namespace mj
 		//パラメータの取得
 		String params(const String& name)const;
 		//パーツ名
-		const String name;
+		String name;
 		//パラメータの更新
 		void set_params(const String& name, const String& param);
 
@@ -132,6 +132,14 @@ namespace mj
 		Vec2 pos;
 	};
 	class StartMotion : public component::Component
+	{
+	public:
+		void start()override;
+		void update(double dt)override;
+	private:
+		Vec2 pos;
+	};
+	class LoadJson :public component::Component
 	{
 	public:
 		void start()override;

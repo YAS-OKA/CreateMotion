@@ -63,6 +63,10 @@ Vec2 Parts::absPos() const
 
 String Parts::params(const String& name)const
 {
+	if (name == U"name")
+	{
+		return this->name;
+	}
 	for (const auto& param : m_params)
 	{
 		if (param.first == name)
@@ -82,6 +86,12 @@ String Parts::params(const String& name)const
 
 void Parts::set_params(const String& name, const String& param)
 {
+	if (name == U"name")
+	{
+		this->name = param;
+		return;
+	}
+
 	if (not m_params.contains(name))throw Error{ name + U"がありません。" };
 
 	if (name == U"TexturePath")
@@ -162,6 +172,9 @@ void EditParts::start()
 	x = 470;
 	y = 0;
 	w = Scene::Width()-x;
+	if (selectedParts == nullptr)texts.emplace(U"name", U"");
+	else texts.emplace(U"name", selectedParts->name);
+
 	for (const auto& elem : JsonElems)
 	{
 		texts.emplace(elem.first, TextEditState());
@@ -169,6 +182,7 @@ void EditParts::start()
 	font = Font{ 15 };
 	hiddenList = {U"Position",U"RotateCenter"};
 	h = 50;
+
 	for (const auto& text : texts)
 	{
 		if (hiddenList.contains(text.first))continue;
@@ -206,6 +220,8 @@ void EditParts::select(Parts* parts)
 {
 	selectedParts = parts;
 	texts.clear();
+	if (selectedParts == nullptr)texts.emplace(U"name", U"");
+	else texts.emplace(U"name", selectedParts->name);
 	for (const auto& elem : JsonElems)
 	{
 		texts.emplace(elem.first,TextEditState{ parts->params(elem.first) });
@@ -401,7 +417,7 @@ void ErasePartsOperate::update(double dt)
 
 void StartMotion::start()
 {
-	pos = { 10,10 };
+	pos = { 10,Scene::Height() - 50};
 }
 
 void StartMotion::update(double dt)
@@ -410,5 +426,18 @@ void StartMotion::update(double dt)
 	{
 		MyEditor* editor = dynamic_cast<MyEditor*>(Parent);
 		editor->working = false;
+	}
+}
+
+void LoadJson::start()
+{
+	pos = { 10,10 };
+}
+
+void LoadJson::update(double dt)
+{
+	if (SimpleGUI::Button(U"モデル読み込み", pos))
+	{
+
 	}
 }
