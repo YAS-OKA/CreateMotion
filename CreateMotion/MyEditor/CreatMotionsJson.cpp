@@ -40,10 +40,25 @@ Parts::Parts(const FilePath& path)
 			flag = true;
 		}
 		else {
+			if (elem.first == U"Position")Print << *elem.second;
 			m_params.emplace(elem.first, *elem.second);
 		}
 	}
 	if (not flag)throw Error{ U"TexturePathがありません。" };
+}
+
+Parts::Parts(HashTable<String,String> param)
+{
+	tex = Texture{ param[U"TexturePath"],TextureDesc::Mipped };
+	for (const auto& [key, value] : param)
+	{
+		if (key == U"TexturePath")
+		{
+			m_params.emplace(key, FileSystem::RelativePath(value, startPath));
+			continue;
+		}
+		m_params.emplace(key, value);
+	}
 }
 
 const Circle& Parts::getRotateCenterCircle()
@@ -105,8 +120,7 @@ void Parts::set_params(const String& name, const String& param)
 	}
 	else if (name == U"Position")
 	{
-
-		m_params[name] = Format(Parse<Vec2>(param) - ParentPos);
+		m_params[name] = Format(Parse<Vec2>(param));
 	}
 	else if (name == U"Parent")
 	{
@@ -127,11 +141,20 @@ void Parts::set_params(const String& name, const String& param)
 
 void Parts::MoveBy(const String& target,const Vec2& delta)
 {
-	set_params(target, Format(Parse<Vec2>(params(target)) + delta));
+	//RotateCenterだったらparamsで、Positionだったらm_paramsで渡す。
+	//二つの違いは相対座標か絶対座標か。気持ち悪いけどこうするしかない...
+	if (target == U"RotateCenter")
+	{
+		set_params(target, Format(Parse<Vec2>(params(target))+delta));
+	}
+	else {
+		set_params(target, Format(Parse<Vec2>(m_params[U"Position"]) + delta));
+	}
 }
 
 void Parts::update(double dt)
 {
+	//Print << U"                                  " << name << U":" << m_params[U"Position"] << U"," << params(U"Position");
 	priority.setDraw(Parse<double>(params(U"Z")));
 }
 
@@ -169,7 +192,7 @@ void MoveRotateCenter::update(double dt)
 void EditParts::start()
 {	
 	selectedParts = nullptr;
-	x = 470;
+	x = Scene::Width()-330;
 	y = 0;
 	w = Scene::Width()-x;
 	if (selectedParts == nullptr)texts.emplace(U"name", U"");
@@ -290,7 +313,7 @@ void EditorsCamera::update(double dt)
 	};
 	//UIを動かす
 	if (touch_thumb) {
-		if (thumb.movedBy(Cursor::DeltaF()).intersectsAt(range)->isEmpty())
+		if (thumb.movedBy(Cursor::DeltaF()).intersectsAt(range).has_value() and thumb.movedBy(Cursor::DeltaF()).intersectsAt(range)->isEmpty())
 			thumb.moveBy(Cursor::DeltaF());
 	}
 	else if (touch_bar_thumb) {
@@ -313,6 +336,10 @@ void EditorsCamera::update(double dt)
 	range.draw(ColorF(0.2, 0.2, 0.2));
 	thumb.draw(Palette::Gray);
 }
+
+double EditorsCamera::get_x() { return x; }
+
+double EditorsCamera::get_y() { return y; }
 
 const Transformer2D EditorsCamera::getTransformer2D(bool cameraAffected)const
 {
@@ -378,21 +405,20 @@ void SaveParts::update(double dt)
 		{
 			json.save(*path);
 		}
-		else
-		{
-			System::MessageBoxOK(U"JSONファイルの保存に失敗しました");
-		}
 	}
 }
 
 void ErasePartsOperate::start()
 {
-	pos = { 10,130 };
+	double y = 350;
+	double d = 55;
+	pos1 = { Scene::Width()-145,y};
+	pos2 = { Scene::Width()-165,y+d };
 }
 
 void ErasePartsOperate::update(double dt)
 {
-	if (SimpleGUI::Button(U"パーツ削除", pos))
+	if (SimpleGUI::Button(U"パーツ削除", pos1))
 	{
 		Parts* p = GetComponent<EditParts>()->get_selectedParts();
 		if (p == nullptr)
@@ -407,22 +433,28 @@ void ErasePartsOperate::update(double dt)
 		}
 	}
 
-	if (KeyDelete.down() and GetComponent<EditParts>()->get_selectedParts() != nullptr and System::MessageBoxOKCancel(U"選択中のパーツを削除しますか？") == MessageBoxResult::OK)
+	if (SimpleGUI::Button(U"全パーツ削除", pos2))
 	{
-		Parts* p = GetComponent<EditParts>()->get_selectedParts();
+		if (System::MessageBoxOKCancel(U"パーツを全て削除しますか？") == MessageBoxResult::Cancel)return;
 		GetComponent<EditParts>()->releaseParts();
-		p->removeSelf<Parts>();
+		Array<Parts*> parts = GetComponentArr<Parts>();
+
+		GetComponent<EditParts>()->releaseParts();
+		for (auto& p : parts)
+		{
+			p->removeSelf<Parts>();
+		}
 	}
 }
 
 void StartMotion::start()
 {
-	pos = { 10,Scene::Height() - 50};
+	pos = { 20,Scene::Height() - 55};
 }
 
 void StartMotion::update(double dt)
 {
-	if (SimpleGUI::Button(U"モーション画面へ",pos))
+	if (SimpleGUI::Button(U"モーションテストへ",pos))
 	{
 		MyEditor* editor = dynamic_cast<MyEditor*>(Parent);
 		editor->working = false;
@@ -438,6 +470,100 @@ void LoadJson::update(double dt)
 {
 	if (SimpleGUI::Button(U"モデル読み込み", pos))
 	{
+		Optional<FilePath> path = Dialog::OpenFile({ FileFilter::JSON()});
+		if (not path)
+		{
+			return;
+		}
+		JSON json = JSON::Load(*path);
+		HashTable<String, HashTable<String,String>> parts_params;
+		HashTable<String,Parts*>parts;
+		for (auto body:json[U"Body"])
+		{
+			for (auto param:body.value)
+			{
+				if (param.key == U"Scale" or param.key == U"Z"){
+					parts_params[body.key].emplace(param.key, Format(param.value.get<double>()));
+				}
+				else {
+					parts_params[body.key].emplace(param.key, param.value.getString());
+				}
+			}
+			Parts* p = AddComponent<Parts>(new Parts(parts_params[body.key]));
+			p->name = body.key;
+			parts.emplace(body.key, p);
+		}
 
+		_set_parent(parts, parts_params);
+
+		HashTable<String, Vec2> positions;
+		for (auto& p : parts) {
+			positions.emplace(p.first, _getAbsPos(p.second));
+		}
+
+		for (auto& p : parts) {
+			p.second->ParentPos = positions[p.first] - Parse<Vec2>(p.second->params(U"Position"));
+			p.second->set_params(U"Position", Format(positions[p.first]));
+		}
+	}
+}
+
+void LoadJson::_set_parent(HashTable<String,Parts*> parts, HashTable<String, HashTable<String, String>> JsonTable)
+{
+	for (auto& p : parts)
+	{
+		if (parts.contains(JsonTable[p.first][U"Parent"]))
+		{
+			p.second->PartsParent = parts[JsonTable[p.first][U"Parent"]];
+		}
+	}
+}
+
+Vec2 LoadJson::_getAbsPos(Parts* parts)
+{
+	if (parts->PartsParent == nullptr)
+	{
+		return Parse<Vec2>(parts->params(U"Position"));
+	}
+	return Parse<Vec2>(parts->params(U"Position"))+_getAbsPos(parts->PartsParent);
+}
+
+void mj::updateParentPos(Array<Parts*> parts_list)
+{
+	HashTable<Parts*, Array<Parts*>>parts_key_parent;
+	Array<Parts*>parents;
+	Array<Parts*>nextParents;
+	//最初の親(親なしのパーツ)を探しつつparts_key_parentを構築
+	for (auto& parts : parts_list)
+	{
+		if (not parts_list.contains(parts->PartsParent))
+		{
+			parts->PartsParent = nullptr;
+			parts->ParentPos = { 0,0 };
+			parents << parts;
+		}
+		else {
+			parts_key_parent[parts->PartsParent] << parts;
+		}
+	}
+	//幅優先で更新していく
+	while (not parents.isEmpty()) {
+		for (const auto& parent : parents)
+		{
+			if (not parts_key_parent.contains(parent))continue;
+
+			for (auto& partsChiled : parts_key_parent[parent])
+			{
+				//更新
+				partsChiled->ParentPos = parent->absPos();
+				nextParents << partsChiled;
+			}
+		}
+		parents.clear();
+		for (auto& nextParent : nextParents)
+		{
+			parents << nextParent;
+		}
+		nextParents.clear();
 	}
 }

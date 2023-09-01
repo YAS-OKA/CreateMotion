@@ -1,19 +1,43 @@
 ﻿{
   "Body": {
-    "bo": {
+    "body": {
       "Parent": "__Main__",
-      "Position": "(400, 300)",
+      "Position": "(601.55358, 311.05199)",
       "RotateCenter": "(0,0)",
       "Scale": 1.0,
       "TexturePath": "CharacterImages/timkun/body.bmp",
       "Z": -10.0
     },
     "larm": {
-      "Parent": "bo",
-      "Position": "(-27.13765, 0.17738)",
-      "RotateCenter": "(0,0)",
+      "Parent": "body",
+      "Position": "(-27.76291, 33.16744)",
+      "RotateCenter": "(9.558, -0.21722)",
       "Scale": 1.0,
       "TexturePath": "CharacterImages/timkun/larm.bmp",
+      "Z": -10.0
+    },
+    "lhand": {
+      "Parent": "larm",
+      "Position": "(-19.94615, 16.93429)",
+      "RotateCenter": "(0.51417, -9.95258)",
+      "Scale": 1.0,
+      "TexturePath": "CharacterImages/timkun/lhand.bmp",
+      "Z": -10.0
+    },
+    "rarm": {
+      "Parent": "body",
+      "Position": "(27.37889, 33.03015)",
+      "RotateCenter": "(-9.34081, -1.08614)",
+      "Scale": 1.0,
+      "TexturePath": "CharacterImages/timkun/rarm.bmp",
+      "Z": -10.0
+    },
+    "rhand": {
+      "Parent": "rarm",
+      "Position": "(20.19663, 16.66024)",
+      "RotateCenter": "(0.43445, -9.84254)",
+      "Scale": 1.0,
+      "TexturePath": "CharacterImages/timkun/rhand.bmp",
       "Z": -10.0
     }
   }

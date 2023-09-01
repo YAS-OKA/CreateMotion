@@ -65,30 +65,28 @@ namespace component
 
 		virtual ~Entity()
 		{
-			for (auto& multi_comp : components)
-			{
-				for (auto& comp : multi_comp.second)
-				{
-					if(comp.second!=nullptr)delete comp.second;
-				}
-			}
-
-			components.clear();
+			//削除されず残ったコンポーネントのポインタを削除
+			deleteCash();
+			deleteComponents();
+			deleteGarbages();
 		};
 
 		//コンポーネントをアップデート
 		virtual void update_components(double dt)
 		{
-			//キャッシュからコンポーネントを追加　メモリリークはないはず
+			deleteGarbages();
+			//キャッシュからコンポーネントを追加
 			for (auto& com_ls : Cash)
 			{
+				if (com_ls.second.empty())continue;
 				for (auto& com : com_ls.second)
 				{
 					components[com_ls.first][com.first] = com.second;
+					componentsNum++;
 				}
-				com_ls.second.clear();
 			}
 			Cash.clear();
+			cashNum = 0;
 
 			//allComponentをセット
 			allComponentForUpdate.clear();
@@ -118,12 +116,13 @@ namespace component
 		const String& get_id() const { return id; }
 
 		const String& get_name() const { return name; }
-		//一致するコンポーネントを削除
+
+		//一致するコンポーネントを削除 下のオーバーロードの関数を呼び出す
 		template<class T>
 		void remove(Component* com)
 		{
 			if (not components.contains(typeid(T).hash_code()))return;
-			Optional<String> id=none;
+			Optional<String> id = none;
 			for (const auto& component : components[typeid(T).hash_code()])
 			{
 				if (component.second == com)id = component.first;
@@ -131,20 +130,26 @@ namespace component
 			if (not id.has_value())return;
 			remove<T>(*id);
 		}
-		//コンポーネントの削除 コンポーネントの型が重複している場合下のif文でid指定で消す
+		//コンポーネントの削除 コンポーネントの型が重複している場合下のif文でid指定で消す 削除したコンポーネントはgarbagesへ
 		template<class T>
 		void remove(String id = U"")
 		{
-			if (components[typeid(T).hash_code()].size() <= 1)
-			{
-				components.erase(typeid(T).hash_code());
-				if (ids.contains(typeid(T).hash_code()))ids[typeid(T).hash_code()] -= 1;
-				return;
-			}
 			if (components[typeid(T).hash_code()].contains(id))
 			{
+				garbages << components[typeid(T).hash_code()][id];
 				components[typeid(T).hash_code()].erase(id);
 				if (ids.contains(typeid(T).hash_code()))ids[typeid(T).hash_code()] -= 1;
+				//空だったらキーもクリア
+				if (components[typeid(T).hash_code()].empty())components.erase(typeid(T).hash_code());
+				componentsNum--;
+			}
+			else if (components[typeid(T).hash_code()].size() <= 1)
+			{
+				for (auto& com : components[typeid(T).hash_code()])garbages << com.second;
+				//garbages << components[typeid(T).hash_code()][0];　これなぜかできない　上で打開
+				components.erase(typeid(T).hash_code());
+				if (ids.contains(typeid(T).hash_code()))ids[typeid(T).hash_code()] -= 1;
+				componentsNum--;
 			}
 		}
 
@@ -250,12 +255,55 @@ namespace component
 		String name = U"entity";
 
 	private:
+		int32 componentsNum = 0;
+		int32 cashNum = 0;
 		HashTable<size_t, HashTable<String, Component*>> components;
 		//iすべてのコンポーネントをここにぶち込む priorityでソートするため
+		//また、これらが持つポインタはcomponentsが持つポインタを指すのでdeleteComponents()でメモリが解放される。
+		//わざわざdeleteする必要はない。
 		Array<Component*> allComponentForUpdate;
 		Array<Component*> allComponentForDraw;
+		//コンポーネントのガーベージコレクション
+		Array<Component*> garbages;
+		//コンポーネントのキャッシュ　ここのコンポーネントは次のフレームでcomponentsに追加される
+		HashTable<size_t, HashTable<String, Component*>> Cash;
 
-		bool _replace_flag(bool update_priority, const Component* s,const Component* other)
+		//メモリの解放
+		void deleteComponents()
+		{
+			for (auto& multi_comp : components)
+			{
+				for (auto& comp : multi_comp.second)
+				{
+					if (comp.second != nullptr)delete comp.second;
+				}
+			}
+			components.clear();
+		};
+		//メモリの解放
+		void deleteCash()
+		{
+			for (auto& cash_ls : Cash)
+			{
+				for (auto& com : cash_ls.second)if (com.second != nullptr)delete com.second;
+				cash_ls.second.clear();
+			}
+			Cash.clear();
+		}
+		//メモリの解放
+		void deleteGarbages()
+		{
+			//ガーベージをクリア
+			for (auto& garbage : garbages)
+			{
+				if (garbage != nullptr) {
+					delete garbage;
+				}
+			}
+			garbages.clear();
+		};
+
+		bool _replace_flag(bool update_priority, const Component* s, const Component* other)
 		{
 			if (update_priority) {
 				if (s->priority.getUpdate() != other->priority.getUpdate())return s->priority.getUpdate() < other->priority.getUpdate();
@@ -267,9 +315,6 @@ namespace component
 		};
 
 		HashTable<size_t, size_t>ids;
-
-		HashTable<size_t, HashTable<String, Component*>> Cash;
-
 
 		template<class T>
 		friend T* Component::AddComponent(const String& id, T* component);

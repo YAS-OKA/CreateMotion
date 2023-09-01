@@ -241,6 +241,16 @@ bool MotionSelect(String ButtonMessage, Vec2 pos, Optional<String>& Path, FileFi
 
 void Main()
 {
+	int32 window_w = 1200, window_h = 700;
+	Window::Resize(window_w, window_h);
+	/*for (auto& elem : mj::JsonElems)  なぜかJsonElems変更できない...
+		if (elem.first == U"Position")
+			elem.second = Format(Vec2{ window_w / 2, window_h/2 });
+
+	for (auto& elem : mj::JsonElems) {
+		Print << elem;
+	}*/
+
 	MyEditor editor;
 	//==========体の用意==========
 	Character character{ JSON::Load(U""),2 };
@@ -274,10 +284,6 @@ void Main()
 			continue;
 		}
 
-		if (SimpleGUI::Button(U"モデルエディタ画面へ", { 10,Scene::Height()-50 }))
-		{
-			editor.working = true;
-		}
 		if (MotionSelect(U"モデル読み込み", {10,10}, JsonPath,FileFilter::JSON()))
 		{
 			//モーションの画面に初めて移ったときの処理
@@ -300,11 +306,12 @@ void Main()
 			MotionLoader loader{ CSV{U"motion.txt"} };
 			character.addMotion(loader.LoadMotion(text.text));
 		}
-
+		RectF ground{ 0,500,Scene::Width()*2,100};
 		{
-			if(touchGround)RectF{ 0,500,800,100 }.draw(Palette::Green);
-
 			const auto t = camera.getTransformer2D(true);
+
+			if (touchGround)ground .draw(Palette::Green);
+
 
 			if (jsonOk) {
 				if (touchGround)character.touchGround(500);
@@ -314,6 +321,11 @@ void Main()
 				if (drawFlg)manager.draw();
 				if (debugFlg)manager.drawDebug();
 			}
+		}
+
+		if (SimpleGUI::Button(U"モデルエディタへ", { 20,Scene::Height() - 55 }))
+		{
+			editor.working = true;
 		}
 		camera.update(Scene::DeltaTime());
 	}

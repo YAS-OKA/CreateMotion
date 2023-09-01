@@ -1,13 +1,16 @@
 ﻿#pragma once
 #include"Entity.hpp"
 
+//次に追加するもの
+//一括操作
 namespace mj
 {
+	//ハッシュテーブルのほうがよかった...
 	using mp = std::pair<String, Optional<String>>;
 	/// @brief jsonの要素を入れる　secondはデフォルト値
 	static Array<mp> JsonElems{
 		mp{U"Parent",U""},
-		mp{U"Position",U"(400,300)"},
+		mp{U"Position",U"(600,350)"},
 		mp{U"RotateCenter",U"(0,0)"},
 		mp{U"TexturePath",none},
 		mp{U"Z",U"-10"},
@@ -24,11 +27,16 @@ namespace mj
 	private:
 		Vec2 pos;
 	};
-	
+
+
+	class LoadJson;
+	//m_params[U"Position"]は絶対座標、params(U"Position")は相対座標を返す
+	//set_params(U"Position,～)は絶対座標を渡す
 	class Parts :public component::Component
 	{
 	public:
 		Parts(const FilePath& path);
+		Parts(HashTable<String,String>params);
 		void update(double dt)override;
 		void draw()const override;
 
@@ -49,8 +57,9 @@ namespace mj
 		const String& startPath= U"CharacterImages/";
 		//親パーツ
 		Parts* PartsParent;
-	private:
+
 		Vec2 ParentPos;
+	private:
 		HashTable<String, String>m_params;
 		Texture tex;
 	};
@@ -78,6 +87,9 @@ namespace mj
 		void update(double dt)override;
 
 		const Transformer2D getTransformer2D(bool cameraAffected)const;
+
+		double get_x();
+		double get_y();
 	private:
 		double scale_range;
 		bool touch_thumb;
@@ -129,7 +141,8 @@ namespace mj
 		void start()override;
 		void update(double dt)override;
 	private:
-		Vec2 pos;
+		Vec2 pos1;
+		Vec2 pos2;
 	};
 	class StartMotion : public component::Component
 	{
@@ -145,7 +158,12 @@ namespace mj
 		void start()override;
 		void update(double dt)override;
 	private:
+		void _set_parent(HashTable<String,Parts*> parts, HashTable<String, HashTable<String, String>> JsonTable);
+		//__Main__以外をすべて相対座標とみなし、それらの絶対座標を得る。
+		Vec2 _getAbsPos(Parts* parts);
 		Vec2 pos;
 	};
+
+	void updateParentPos(Array<Parts*> parts_list);
 }
 

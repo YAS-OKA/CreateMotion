@@ -1,5 +1,25 @@
+@time,2
+Rotate,body,360,@time
+Rotate,rarm,360,@time
+Rotate,lhand,360,@time
+Wait,2
+
+Rotate,body,-360,@time
+Rotate,rarm,-360,@time
+Rotate,lhand,-360,@time
+
+#Walk
+@time,10
+Rotate,body,-360,@time
+Rotate,rarm,-360,@time
+Rotate,lhand,-360,@time
+
 #RotateToTest
 RotateTo,larm,0,1,false
 
 #MoveTest
 Move,larm,20,0,0.5
+
+#a
+Rotate,lhand,-360,2
+Rotate,rhand,-360,2

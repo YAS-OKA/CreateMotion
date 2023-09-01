@@ -17,6 +17,8 @@ MyEditor::MyEditor()
 void MyEditor::update(double dt)
 {
 	update_components(dt);
+
+	mj::updateParentPos(GetComponentArr<mj::Parts>());
 	
 	//パーツの選択
 	if (MouseL.up())
