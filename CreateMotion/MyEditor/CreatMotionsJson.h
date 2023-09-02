@@ -28,7 +28,6 @@ namespace mj
 		Vec2 pos;
 	};
 
-
 	class LoadJson;
 	//m_params[U"Position"]は絶対座標、params(U"Position")は相対座標を返す
 	//set_params(U"Position,～)は絶対座標を渡す
@@ -37,14 +36,15 @@ namespace mj
 	public:
 		Parts(const FilePath& path);
 		Parts(HashTable<String,String>params);
+		void start()override;
 		void update(double dt)override;
 		void draw()const override;
 
 		void MoveBy(const String& targetParameter,const Vec2& delta);
 
-		const Circle& getRotateCenterCircle();
+		/*const Circle& getRotateCenterCircle();
 
-		const RectF& get_region();
+		const RectF& get_region();*/
 
 		Vec2 absPos()const;
 		//パラメータの取得
@@ -60,8 +60,32 @@ namespace mj
 
 		Vec2 ParentPos;
 	private:
+		String path;
 		HashTable<String, String>m_params;
 		Texture tex;
+	};
+	class RotateCenter :public component::Component
+	{
+	public:
+		void setParts(Parts* parts);
+		bool mouseOver();
+		void releaseParts();
+		void start()override;
+		void update(double dt)override;
+		void draw()const override;
+	private:
+		Circle circle;
+		Parts* parts;
+	};
+	//パーツの当たり判定　透明色の部分をのぞく
+	class PartsColliders :public component::Component
+	{
+	public:
+		void makeCollider(Parts* parts,const String& path);
+		bool mouseOver(Parts* parts);
+		void removeColliderOf(Parts* parts);
+	private:
+		HashTable<Parts*, MultiPolygon> colliders;
 	};
 	//パーツを動かす
 	class MoveParts :public component::Component

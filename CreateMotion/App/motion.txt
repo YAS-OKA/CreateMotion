@@ -1,6 +1,6 @@
-ChangeScale,body,2,2,1,false
-
-Rotate,body,50,1
+Rotate,body,1000,3
+ChangeScale,body,0,0,3
+ChangeColor,body,1,1,1,0,3
 
 #color
 ChangeColor,body,0,1,1,0,2

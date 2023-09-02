@@ -184,7 +184,6 @@ public:
 	void update(Character* character, double dt = Scene::DeltaTime())override
 	{
 		dt = calTime(dt);
-		//character->get(target)->
 		for (auto&  joint_color: start_color)
 		{
 			joint_color.first->color = joint_color.second.lerp(color, time / timelim);
@@ -198,8 +197,10 @@ public:
 	String target;
 	SizeF scale;
 	HashTable<Joint*, SizeF> d_scale;
-	bool following;
+	HashTable<Joint*, SizeF> d_position;
+	HashTable<Joint*, SizeF> d_center;
 
+	bool following;
 	ChangeScale(const String& target, double x_scale,double y_scale, double time, bool following = true)
 		:TimeMove(time), scale(SizeF{x_scale,y_scale}), target(target), following(following)
 	{}
@@ -219,16 +220,33 @@ public:
 		{
 			targets << character->get(target);
 		}
-
+		bool flag = false;
 		for (auto& joint : targets)
 		{
 			d_scale.emplace(joint, joint->size * scale - joint->size);
+			d_center.emplace(joint, joint->rotatePos * scale - joint->rotatePos);
+			d_position.emplace(joint, joint->pos*scale-joint->pos);
+			if (not flag)
+			{
+				flag = true;
+
+			}
+		}
+		
+		if (targets[0] == character->joint)
+		{
+			d_position[targets[0]] = ( - targets[0]->rotatePos)*scale;
+		}
+		else
+		{
+			d_position[targets[0]] = { 0,0 };
 		}
 
-		if(timelim==0)for (auto& joint_scale : d_scale)
+		/*if(timelim==0)for (auto& joint_scale : d_scale)
 		{
 			joint_scale.first->size += joint_scale.second;
-		}
+			joint_scale.first->pos += dp * scale;
+		}*/
 	}
 
 	void update(Character* character, double dt = Scene::DeltaTime())override
@@ -238,8 +256,18 @@ public:
 		{
 			joint_scale.first->size += ( dt / timelim) * joint_scale.second;
 		}
+		for (auto& joint_scale : d_position)
+		{
+			joint_scale.first->pos += (dt / timelim) * joint_scale.second;
+		}
+		for (auto& joint_scale : d_center)
+		{
+			joint_scale.first->rotatePos += (dt / timelim) * joint_scale.second;
+		}
 	}
 };
+
+
 
 //class SetZ :public Move
 //{
@@ -327,7 +355,7 @@ public:
 			else return new ChangeTexture(list[1], list[2], Parse<double>(list[3]));
 		};
 		moveResolver[U"ChangeColor"] = [](const Array<String>& list){
-			if(list.size()<7)return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]) };
+			if(list.size()<=7)return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]) };
 			else return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]),Parse<bool>(list[7])};
 		};
 		moveResolver[U"ChangeScale"] = [](const Array<String>& list) {
@@ -460,6 +488,7 @@ void Main()
 
 	while (System::Update())
 	{
+		ClearPrint();
 		jsonOk = character.joint != nullptr;
 		motionOk = MotionPath.has_value();
 

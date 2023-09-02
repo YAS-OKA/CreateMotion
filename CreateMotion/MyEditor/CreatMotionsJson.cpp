@@ -26,7 +26,7 @@ void RegisterParts::addParts(const Array<FilePath>& path)
 }
 
 Parts::Parts(const FilePath& path)
-	:tex(Texture{ path ,TextureDesc::Mipped}),name(FileSystem::BaseName(path))
+	:path(path),name(FileSystem::BaseName(path))
 {
 	ParentPos = Vec2{ 0,0 };
 	bool flag = false;
@@ -40,7 +40,6 @@ Parts::Parts(const FilePath& path)
 			flag = true;
 		}
 		else {
-			/*if (elem.first == U"Position")Print << *elem.second;*/
 			m_params.emplace(elem.first, *elem.second);
 		}
 	}
@@ -48,8 +47,8 @@ Parts::Parts(const FilePath& path)
 }
 
 Parts::Parts(HashTable<String,String> param)
+	:path(param[U"TexturePath"])
 {
-	tex = Texture{ param[U"TexturePath"],TextureDesc::Mipped };
 	for (const auto& [key, value] : param)
 	{
 		if (key == U"TexturePath")
@@ -61,15 +60,15 @@ Parts::Parts(HashTable<String,String> param)
 	}
 }
 
-const Circle& Parts::getRotateCenterCircle()
-{
-	return Circle{ absPos() + Parse<Vec2>(params(U"RotateCenter")),3};
-}
-
-const RectF& Parts::get_region()
-{
-	return tex.scaled(Parse<double>(params(U"Scale"))).regionAt(absPos());
-}
+//const Circle& Parts::getRotateCenterCircle()
+//{
+//	return Circle{ absPos() + Parse<Vec2>(params(U"RotateCenter")),3};
+//}
+//
+//const RectF& Parts::get_region()
+//{
+//	return tex.scaled(Parse<double>(params(U"Scale"))).regionAt(absPos());
+//}
 
 Vec2 Parts::absPos() const
 {
@@ -152,6 +151,12 @@ void Parts::MoveBy(const String& target,const Vec2& delta)
 	}
 }
 
+void Parts::start()
+{
+	tex = Texture{ path,TextureDesc::Mipped };
+	GetComponent<PartsColliders>()->makeCollider(this, path);
+}
+
 void Parts::update(double dt)
 {
 	//Print << U"                                  " << name << U":" << m_params[U"Position"] << U"," << params(U"Position");
@@ -161,8 +166,57 @@ void Parts::update(double dt)
 void Parts::draw()const
 {
 	tex.scaled(Parse<double>(params(U"Scale"))).drawAt(absPos());
-	
-	(absPos() + Parse<Vec2>(params(U"RotateCenter"))).asCircle(3).draw(Palette::Red);
+}
+
+void RotateCenter::setParts(Parts* p)
+{
+	parts = p;
+}
+
+bool RotateCenter::mouseOver()
+{
+	return circle.mouseOver();
+}
+
+void RotateCenter::releaseParts()
+{
+	parts = nullptr;
+}
+
+void RotateCenter::start()
+{
+	parts = nullptr;
+	circle = { 0,0,3 };
+}
+
+void RotateCenter::update(double dt)
+{
+	if (parts == nullptr)return;
+	circle.setCenter(parts->absPos() + Parse<Vec2>(parts->params(U"RotateCenter")));
+}
+
+void RotateCenter::draw()const
+{
+	if (parts == nullptr)return;
+	circle.draw(Palette::Red);
+}
+
+void PartsColliders::makeCollider(Parts* parts, const String& path)
+{
+	Image im{ path };
+	MultiPolygon polys = Image{ path }.alphaToPolygons();
+	polys.moveBy(-im.size() / 2);
+	colliders.emplace(parts,polys);
+}
+
+bool PartsColliders::mouseOver(Parts* parts)
+{
+	return colliders[parts].movedBy(parts->absPos()).mouseOver();
+}
+
+void PartsColliders::removeColliderOf(Parts* parts)
+{
+	colliders.erase(parts);
 }
 
 void MoveParts::start()
@@ -186,7 +240,10 @@ void MoveRotateCenter::update(double dt)
 {
 	//カメラの位置や拡大縮小を考慮
 	const auto t = GetComponent<EditorsCamera>()->getTransformer2D(true);
-	if (selectedParts != nullptr)selectedParts->MoveBy(U"RotateCenter",Cursor::DeltaF());
+	if (selectedParts != nullptr)
+	{
+		selectedParts->MoveBy(U"RotateCenter", Cursor::DeltaF());
+	}
 }
 
 void EditParts::start()
@@ -429,6 +486,8 @@ void ErasePartsOperate::update(double dt)
 		if (System::MessageBoxOKCancel(U"選択中のパーツを削除しますか？") == MessageBoxResult::OK)
 		{
 			GetComponent<EditParts>()->releaseParts();
+			GetComponent<RotateCenter>()->releaseParts();
+			GetComponent<PartsColliders>()->removeColliderOf(p);
 			p->removeSelf<Parts>();
 		}
 	}
@@ -437,11 +496,11 @@ void ErasePartsOperate::update(double dt)
 	{
 		if (System::MessageBoxOKCancel(U"パーツを全て削除しますか？") == MessageBoxResult::Cancel)return;
 		GetComponent<EditParts>()->releaseParts();
+		GetComponent<RotateCenter>()->releaseParts();
 		Array<Parts*> parts = GetComponentArr<Parts>();
-
-		GetComponent<EditParts>()->releaseParts();
 		for (auto& p : parts)
 		{
+			GetComponent<PartsColliders>()->removeColliderOf(p);
 			p->removeSelf<Parts>();
 		}
 	}
