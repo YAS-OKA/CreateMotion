@@ -14,6 +14,7 @@ public:
 
 	void update(Character* character, double dt = Scene::DeltaTime())override {
 		dt = calTime(dt);
+		if (character->get(target) == nullptr)return;
 		character->get(target)->angle += dt * rad / timelim;
 	}
 };
@@ -43,6 +44,7 @@ public:
 	}
 	void start(Character* character)override {
 		//character->get(target)->angle = rad;
+		if (character->get(target) == nullptr)return;
 		if(timelim==0)character->get(target)->angle = rad;
 
 		double delta = rad - seikika(character->get(target)->angle);
@@ -74,7 +76,7 @@ public:
 	String target;
 
 	Translate(const String& target, Vec2 deltaPos, double time)
-		:TimeMove{ time }, dp(deltaPos) {};
+		:TimeMove{ time },target(target), dp(deltaPos) {};
 
 	void start(Character* character)override
 	{
@@ -83,12 +85,34 @@ public:
 			character->get(target)->pos += dp;
 			return;
 		}
+		//character->get(target)->pos = { 100,100 };
 	}
 
 	void update(Character* character, double dt = Scene::DeltaTime())override {
 		dt = calTime(dt);
 		if (timelim == 0)return;
+		//rint << character->get(target)->pos;
+		if (character->get(target) == nullptr)return;
 		character->get(target)->pos += dt * dp / timelim;
+	}
+};
+
+class SetPos :public Translate
+{
+public:
+	Vec2 pos;
+	SetPos(const String& target,Vec2 pos, double time)
+		:Translate(target, { 0,0 }, time),pos(pos)
+	{}
+
+	void start(Character* character)override
+	{
+		if (timelim == 0)
+		{
+			character->get(target)->pos = pos;
+			return;
+		}
+		dp = pos - character->get(target)->pos;
 	}
 };
 
@@ -162,7 +186,7 @@ public:
 		};
 		//現在地から指定した分の移動
 		moveResolver[U"Move"] = [](const Array<String>& list) {return new Translate(list[1], Vec2{ Parse<double>(list[2]),Parse<double>(list[3]) }, Parse<double>(list[4])); };
-
+		moveResolver[U"MoveTo"] = [](const Array<String>& list) {return new SetPos(list[1], Vec2{ Parse<double>(list[2]),Parse<double>(list[3]) }, Parse<double>(list[4])); };
 	}
 
 	Motion LoadMotion(String region = U"") {
@@ -243,17 +267,18 @@ void Main()
 {
 	int32 window_w = 1200, window_h = 700;
 	Window::Resize(window_w, window_h);
-	/*for (auto& elem : mj::JsonElems)  なぜかJsonElems変更できない...
-		if (elem.first == U"Position")
-			elem.second = Format(Vec2{ window_w / 2, window_h/2 });
+	//for (auto& elem : mj::JsonElems)  //なぜかJsonElems変更できない...
+	//	if (elem.first == U"Position")
+	//		elem.second = Format(Vec2{ window_w / 2, window_h/2 });
 
-	for (auto& elem : mj::JsonElems) {
-		Print << elem;
-	}*/
+	//for (auto& elem : mj::JsonElems) {
+	//	Print << elem;
+	//}
 
 	MyEditor editor;
 	//==========体の用意==========
 	Character character{ JSON::Load(U""),2 };
+	Character start_character{ JSON::Load(U""),2 };
 
 	MotionLoader loader{ CSV{U""} };
 
@@ -287,13 +312,25 @@ void Main()
 		if (MotionSelect(U"モデル読み込み", {10,10}, JsonPath,FileFilter::JSON()))
 		{
 			//モーションの画面に初めて移ったときの処理
-			if(JsonPath)character = Character{ JSON::Load(*JsonPath),2 };
-			character.setDrawManager(&manager);
+			if (JsonPath) {
+				character = Character{ JSON::Load(*JsonPath),2 };
+				manager.clear();
+				character.setDrawManager(&manager);
+			}
 		}
 		if (MotionSelect(U"スクリプト", {10,50}, MotionPath,FileFilter::Text()))
 		{
 			if (MotionPath)loader = MotionLoader{ CSV{*MotionPath} };
 			motion = loader.LoadMotion();
+		}
+
+		if (SimpleGUI::Button(U"リセット", { 10,UiStartY + 170 }))
+		{
+			if (JsonPath) {
+				character = Character{ JSON::Load(*JsonPath),2 };
+				manager.clear();
+				character.setDrawManager(&manager);
+			}
 		}
 
 		SimpleGUI::CheckBox(drawFlg, U"通常表示", Vec2{ 10, UiStartY+50 }, 160);

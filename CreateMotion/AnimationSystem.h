@@ -295,6 +295,10 @@ public:
 	}
 
 	Joint* get(const String& name) {
+		if (not table.contains(name))
+		{
+			return nullptr;
+		}
 		return &table[name].joint;
 	}
 

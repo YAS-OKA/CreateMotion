@@ -40,7 +40,7 @@ Parts::Parts(const FilePath& path)
 			flag = true;
 		}
 		else {
-			if (elem.first == U"Position")Print << *elem.second;
+			/*if (elem.first == U"Position")Print << *elem.second;*/
 			m_params.emplace(elem.first, *elem.second);
 		}
 	}

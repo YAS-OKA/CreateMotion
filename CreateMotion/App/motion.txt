@@ -9,17 +9,12 @@ Rotate,rarm,-360,@time
 Rotate,lhand,-360,@time
 
 #Walk
-@time,10
-Rotate,body,-360,@time
-Rotate,rarm,-360,@time
-Rotate,lhand,-360,@time
+RotateTo,2foot,45,0
+RotateTo,1foot,0,0
+Move,2foot,-40,0,0.5
+Move,1foot,30,0,0.5
 
-#RotateToTest
-RotateTo,larm,0,1,false
-
-#MoveTest
-Move,larm,20,0,0.5
-
-#a
-Rotate,lhand,-360,2
-Rotate,rhand,-360,2
+RotateTo,2foot,0,0
+RotateTo,1foot,45,0
+Move,2foot,40,0,0.3
+Move,1foot,-30,0,0.3
