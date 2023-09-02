@@ -76,10 +76,14 @@ public:
 	String target;
 
 	Translate(const String& target, Vec2 deltaPos, double time)
-		:TimeMove{ time },target(target), dp(deltaPos) {};
+		:TimeMove{ time },target(target), dp(deltaPos)
+	{
+
+	};
 
 	void start(Character* character)override
 	{
+		TimeMove::start(character);
 		if (timelim == 0)
 		{
 			character->get(target)->pos += dp;
@@ -107,12 +111,133 @@ public:
 
 	void start(Character* character)override
 	{
+		TimeMove::start(character);
 		if (timelim == 0)
 		{
 			character->get(target)->pos = pos;
 			return;
 		}
 		dp = pos - character->get(target)->pos;
+	}
+};
+
+class ChangeTexture :public TimeMove
+{
+public:
+	String path;
+	String target;
+
+	ChangeTexture(const String& target, const String& path, double time = 0)
+		:TimeMove(time), target(target),path(path)
+	{
+		TextureAsset::Register(path, path);
+	}
+
+	void start(Character* character)override
+	{
+		TimeMove::start(character);
+		if (timelim == 0)
+		{
+			character->get(target)->textureName = path;
+		}
+	}
+
+	void update(Character* character, double dt = Scene::DeltaTime())override
+	{
+		dt = calTime(dt);
+		if(not isActive())character->get(target)->textureName = path;
+	}
+};
+
+class ChangeColor :public TimeMove
+{
+public:
+	String target;
+	ColorF color;
+	HashTable<Joint*,ColorF> start_color;
+	bool following;
+	ChangeColor(const String& target, const ColorF& color, double time, bool following = true)
+		:TimeMove(time),color(color),target(target),following(following)
+	{}
+
+	//ChangeColor(const String& target,String )
+
+	void start(Character* character)override
+	{
+		TimeMove::start(character);
+
+		Array<Joint*> targets;
+		if (following)
+		{
+			targets=character->get(target)->getAll();
+		}
+		else
+		{
+			targets << character->get(target);
+		}
+		for (auto& joint : targets)
+		{
+			start_color.emplace(joint,joint->color);
+		}
+	}
+
+	void update(Character* character, double dt = Scene::DeltaTime())override
+	{
+		dt = calTime(dt);
+		//character->get(target)->
+		for (auto&  joint_color: start_color)
+		{
+			joint_color.first->color = joint_color.second.lerp(color, time / timelim);
+		}
+	}
+};
+
+class ChangeScale :public TimeMove
+{
+public:
+	String target;
+	SizeF scale;
+	HashTable<Joint*, SizeF> d_scale;
+	bool following;
+
+	ChangeScale(const String& target, double x_scale,double y_scale, double time, bool following = true)
+		:TimeMove(time), scale(SizeF{x_scale,y_scale}), target(target), following(following)
+	{}
+
+	//ChangeColor(const String& target,String )
+
+	void start(Character* character)override
+	{
+		TimeMove::start(character);
+
+		Array<Joint*> targets;
+		if (following)
+		{
+			targets = character->get(target)->getAll();
+		}
+		else
+		{
+			targets << character->get(target);
+		}
+
+		for (auto& joint : targets)
+		{
+			d_scale.emplace(joint, joint->size * scale - joint->size);
+		}
+
+		if(timelim==0)for (auto& joint_scale : d_scale)
+		{
+			joint_scale.first->size += joint_scale.second;
+		}
+	}
+
+	void update(Character* character, double dt = Scene::DeltaTime())override
+	{
+		dt = calTime(dt);
+		for (auto& joint_scale : d_scale)
+		{
+			joint_scale.first->size += ( dt / timelim) * joint_scale.second;
+		}
 	}
 };
 
@@ -187,9 +312,21 @@ public:
 		//現在地から指定した分の移動
 		moveResolver[U"Move"] = [](const Array<String>& list) {return new Translate(list[1], Vec2{ Parse<double>(list[2]),Parse<double>(list[3]) }, Parse<double>(list[4])); };
 		moveResolver[U"MoveTo"] = [](const Array<String>& list) {return new SetPos(list[1], Vec2{ Parse<double>(list[2]),Parse<double>(list[3]) }, Parse<double>(list[4])); };
+		moveResolver[U"ChangeTexture"] = [](const Array<String>& list) {
+			if (list.size() < 4)return new ChangeTexture(list[1], list[2]);
+			else return new ChangeTexture(list[1], list[2], Parse<double>(list[3]));
+		};
+		moveResolver[U"ChangeColor"] = [](const Array<String>& list){
+			if(list.size()<7)return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]) };
+			else return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]),Parse<bool>(list[7])};
+		};
+		moveResolver[U"ChangeScale"] = [](const Array<String>& list) {
+			if (list.size() < 6)return new ChangeScale{ list[1],Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]) };
+			else return new ChangeScale{ list[1],Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]) ,Parse<bool>(list[5]) };
+		};
 	}
 
-	Motion LoadMotion(String region = U"") {
+	Motion LoadMotion(String region = U"", bool debug = false) {
 
 		Motion motion;
 
@@ -211,7 +348,7 @@ public:
 		Motion* tmpMotion = new Motion{ true };
 
 		bool addFlg = false;
-		//ここ-1にしなくていいと思うんだよなぁ
+		
 		for (size_t row = index; row < tmpCsv.rows(); ++row)
 		{
 			if (tmpCsv.columns(row) == 0) {
@@ -234,8 +371,19 @@ public:
 						tmpCsv[row][col] = variableTable[tmpCsv[row][col]];
 					}
 				}
-				tmpMotion->add(moveResolver[tmpCsv[row][0]](tmpCsv[row]));
-				addFlg = true;
+				if (moveResolver.contains(tmpCsv[row][0])) {
+					try {
+						tmpMotion->add(moveResolver[tmpCsv[row][0]](tmpCsv[row]));
+						addFlg = true;
+					}
+					catch (...) {
+						Print << U"おそらく引数が間違っています。";
+					}
+				}
+				else if (debug)
+				{
+					Print << U"存在しない命令です。";
+				}
 			}
 		}
 		//あとで考える
@@ -282,7 +430,8 @@ void Main()
 
 	MotionLoader loader{ CSV{U""} };
 
-	Motion motion = loader.LoadMotion();
+	//Motion motion =
+	loader.LoadMotion();
 
 	//==========描画に追加==========
 	DrawManager manager;
@@ -298,6 +447,7 @@ void Main()
 	bool jsonOk = false, motionOk = false;
 	bool touchGround = false;
 	TextEditState text;
+
 	while (System::Update())
 	{
 		jsonOk = character.joint != nullptr;
@@ -321,7 +471,6 @@ void Main()
 		if (MotionSelect(U"スクリプト", {10,50}, MotionPath,FileFilter::Text()))
 		{
 			if (MotionPath)loader = MotionLoader{ CSV{*MotionPath} };
-			motion = loader.LoadMotion();
 		}
 
 		if (SimpleGUI::Button(U"リセット", { 10,UiStartY + 170 }))
@@ -339,9 +488,12 @@ void Main()
 		SimpleGUI::TextBox(text, Vec2{ 100, UiStartY });
 
 		if (SimpleGUI::Button(U"実行", Vec2{ 10, UiStartY },unspecified,jsonOk and motionOk)) {
+			//loader.LoadMotion();
+			MotionLoader l{ CSV{*MotionPath} };
+			/*Motion motion{};
+			motion.add(new Translate(U"body", { 100,0 }, 1));*/
 			character.motions.clear();
-			MotionLoader loader{ CSV{U"motion.txt"} };
-			character.addMotion(loader.LoadMotion(text.text));
+			character.addMotion(l.LoadMotion(text.text, true));
 		}
 		RectF ground{ 0,500,Scene::Width()*2,100};
 		{

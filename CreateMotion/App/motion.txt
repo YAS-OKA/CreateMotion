@@ -1,12 +1,12 @@
-@time,2
-Rotate,body,360,@time
-Rotate,rarm,360,@time
-Rotate,lhand,360,@time
-Wait,2
+ChangeScale,body,2,2,1,false
 
-Rotate,body,-360,@time
-Rotate,rarm,-360,@time
-Rotate,lhand,-360,@time
+Rotate,body,50,1
+
+#color
+ChangeColor,body,0,1,1,0,2
+
+#texture
+ChangeTexture,body,CharacterImages/timkun/body.bmp
 
 #Walk
 RotateTo,2foot,45,0
@@ -18,3 +18,6 @@ RotateTo,2foot,0,0
 RotateTo,1foot,45,0
 Move,2foot,40,0,0.3
 Move,1foot,-30,0,0.3
+
+#test
+Move,body,-100,0,1

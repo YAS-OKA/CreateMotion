@@ -170,6 +170,17 @@ public:
 	Joint(const Vec2& center, const Vec2& rotatePos, const String& textureName, double z, double scale)
 		:Movable{ center,TextureAsset{textureName}.size() * scale,rotatePos,0_deg,z }, textureName{ textureName } {}
 
+	Array<Joint*> getAll()
+	{
+		Array<Joint*>result;
+		result << this;
+		for (auto& joint : joints)
+		{
+			result.append(joint->getAll());
+		}
+		return result;
+	}
+
 	void add(Joint* joint) {
 		joints << joint;
 	}
