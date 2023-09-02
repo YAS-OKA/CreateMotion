@@ -241,6 +241,16 @@ public:
 	}
 };
 
+//class SetZ :public Move
+//{
+//public:
+//	double z;
+//	String target;
+//	SetZ(const String& target, double z, bool following = true)
+//		:z(z), target(target), following(following)
+//	{}
+//};
+
 class Mirror :public TimeMove {
 public:
 	double rate;
