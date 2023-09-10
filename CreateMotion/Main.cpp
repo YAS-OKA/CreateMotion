@@ -13,47 +13,39 @@ public:
 	virtual ~Rotate() {}
 
 	void update(Character* character, double dt = Scene::DeltaTime())override {
-		if (timelim == 0)return;
-
 		dt = calTime(dt);
 		if (character->get(target) == nullptr)return;
 		character->get(target)->angle += dt * rad / timelim;
 	}
 };
 //0~360
-inline double seikika(double theta) {
+double seikika(double theta) {
 	if (0 <= theta)return Fmod(theta, 360_deg);//正規化
 	else return 360_deg + Fmod(theta, 360_deg);
 }
 /// @brief 符号判定
 /// @param A 
 /// @return Aが負なら-1　Aが正なら+1
-inline double sign(double A) {
+double sign(double A) {
 	return (A > 0) - (A < 0);
 }
 
 class RotateTo :public Rotate {
 	int32 direction = 0;
-	double baseRad;
 public:
 	RotateTo(const String& target, double rad, double timelim, bool clockWise) :Rotate{ target,rad,timelim }
 	{
 		rad = seikika(rad);
-		baseRad = rad;
 		if (clockWise)direction = 1; else direction = -1;
 	}
 	RotateTo(const String& target, double rad, double timelim) :Rotate{ target,rad,timelim }
 	{
 		rad = seikika(rad);
-		baseRad = rad;
 	}
 	void start(Character* character)override {
-
-		rad = baseRad;
-		Rotate::start(character);
-
+		//character->get(target)->angle = rad;
 		if (character->get(target) == nullptr)return;
-		if (timelim == 0)character->get(target)->angle = rad;
+		if(timelim==0)character->get(target)->angle = rad;
 
 		double delta = rad - seikika(character->get(target)->angle);
 		if (direction == 0)
@@ -72,7 +64,7 @@ public:
 			//反時計回り
 			delta > 0 ? rad = delta - 360_deg : rad = delta;
 		}
-
+				
 	}
 	//Rotateのupdateを使う
 };
@@ -84,7 +76,7 @@ public:
 	String target;
 
 	Translate(const String& target, Vec2 deltaPos, double time)
-		:TimeMove{ time }, target(target), dp(deltaPos)
+		:TimeMove{ time },target(target), dp(deltaPos)
 	{
 
 	};
@@ -97,11 +89,13 @@ public:
 			character->get(target)->pos += dp;
 			return;
 		}
+		//character->get(target)->pos = { 100,100 };
 	}
 
 	void update(Character* character, double dt = Scene::DeltaTime())override {
 		dt = calTime(dt);
 		if (timelim == 0)return;
+		//rint << character->get(target)->pos;
 		if (character->get(target) == nullptr)return;
 		character->get(target)->pos += dt * dp / timelim;
 	}
@@ -111,8 +105,8 @@ class SetPos :public Translate
 {
 public:
 	Vec2 pos;
-	SetPos(const String& target, Vec2 pos, double time)
-		:Translate(target, { 0,0 }, time), pos(pos)
+	SetPos(const String& target,Vec2 pos, double time)
+		:Translate(target, { 0,0 }, time),pos(pos)
 	{}
 
 	void start(Character* character)override
@@ -134,7 +128,7 @@ public:
 	String target;
 
 	ChangeTexture(const String& target, const String& path, double time = 0)
-		:TimeMove(time), target(target), path(path)
+		:TimeMove(time), target(target),path(path)
 	{
 		TextureAsset::Register(path, path);
 	}
@@ -151,7 +145,7 @@ public:
 	void update(Character* character, double dt = Scene::DeltaTime())override
 	{
 		dt = calTime(dt);
-		if (not isActive())character->get(target)->textureName = path;
+		if(not isActive())character->get(target)->textureName = path;
 	}
 };
 
@@ -160,11 +154,13 @@ class ChangeColor :public TimeMove
 public:
 	String target;
 	ColorF color;
-	HashTable<Joint*, ColorF> start_color;
+	HashTable<Joint*,ColorF> start_color;
 	bool following;
 	ChangeColor(const String& target, const ColorF& color, double time, bool following = true)
-		:TimeMove(time), color(color), target(target), following(following)
+		:TimeMove(time),color(color),target(target),following(following)
 	{}
+
+	//ChangeColor(const String& target,String )
 
 	void start(Character* character)override
 	{
@@ -173,7 +169,7 @@ public:
 		Array<Joint*> targets;
 		if (following)
 		{
-			targets = character->get(target)->getAll();
+			targets=character->get(target)->getAll();
 		}
 		else
 		{
@@ -181,14 +177,14 @@ public:
 		}
 		for (auto& joint : targets)
 		{
-			start_color.emplace(joint, joint->color);
+			start_color.emplace(joint,joint->color);
 		}
 	}
 
 	void update(Character* character, double dt = Scene::DeltaTime())override
 	{
 		dt = calTime(dt);
-		for (auto& joint_color : start_color)
+		for (auto&  joint_color: start_color)
 		{
 			joint_color.first->color = joint_color.second.lerp(color, time / timelim);
 		}
@@ -205,9 +201,11 @@ public:
 	HashTable<Joint*, SizeF> d_center;
 
 	bool following;
-	ChangeScale(const String& target, double x_scale, double y_scale, double time, bool following = true)
-		:TimeMove(time), scale(SizeF{ x_scale,y_scale }), target(target), following(following)
+	ChangeScale(const String& target, double x_scale,double y_scale, double time, bool following = true)
+		:TimeMove(time), scale(SizeF{x_scale,y_scale}), target(target), following(following)
 	{}
+
+	//ChangeColor(const String& target,String )
 
 	void start(Character* character)override
 	{
@@ -227,17 +225,17 @@ public:
 		{
 			d_scale.emplace(joint, joint->size * scale - joint->size);
 			d_center.emplace(joint, joint->rotatePos * scale - joint->rotatePos);
-			d_position.emplace(joint, joint->pos * scale - joint->pos);
+			d_position.emplace(joint, joint->pos*scale-joint->pos);
 			if (not flag)
 			{
 				flag = true;
 
 			}
 		}
-
+		
 		if (targets[0] == character->joint)
 		{
-			d_position[targets[0]] = (-targets[0]->rotatePos) * scale;
+			d_position[targets[0]] = ( - targets[0]->rotatePos)*scale;
 		}
 		else
 		{
@@ -245,7 +243,7 @@ public:
 			d_position[targets[0]] = targets[0]->rotatePos - targets[0]->rotatePos * scale;
 		}
 
-		if (timelim == 0)
+		if(timelim==0)
 		{
 			for (auto& joint_scale : d_scale)
 			{
@@ -268,7 +266,7 @@ public:
 		if (timelim == 0)return;
 		for (auto& joint_scale : d_scale)
 		{
-			joint_scale.first->size += (dt / timelim) * joint_scale.second;
+			joint_scale.first->size += ( dt / timelim) * joint_scale.second;
 		}
 		for (auto& joint_scale : d_position)
 		{
@@ -281,95 +279,7 @@ public:
 	}
 };
 
-class BaseChangeScale :public TimeMove
-{
-public:
-	String target;
-	SizeF scale;
-	HashTable<Joint*, SizeF> d_scale;
-	HashTable<Joint*, SizeF> d_position;
-	HashTable<Joint*, SizeF> d_center;
 
-	bool following;
-	BaseChangeScale(const String& target, double x_scale, double y_scale, double time, bool following = true)
-		:TimeMove(time), scale(SizeF{ x_scale,y_scale }), target(target), following(following)
-	{}
-
-	void start(Character* character)override
-	{
-		TimeMove::start(character);
-
-		Array<Joint*> targets;
-		Array<Joint*> baseTargets;
-
-		if (following)
-		{
-			targets = character->get(target)->getAll();
-			baseTargets = character->getBase()->get(target)->getAll();
-		}
-		else
-		{
-			targets << character->get(target);
-			baseTargets << character->getBase()->get(target);
-		}
-		bool flag = false;
-
-		for (auto i : step(size(targets))) {
-			d_scale.emplace(targets[i], baseTargets[i]->size * scale - targets[i]->size);
-			d_center.emplace(targets[i], baseTargets[i]->rotatePos * scale - targets[i]->rotatePos);
-			d_position.emplace(targets[i], baseTargets[i]->pos * scale - targets[i]->pos);
-			if (not flag)
-			{
-				flag = true;
-
-			}
-
-		}
-
-		if (targets[0] == character->joint)
-		{
-			d_position[targets[0]] = (-targets[0]->rotatePos) * scale;
-		}
-		else
-		{
-			d_position[targets[0]] = targets[0]->rotatePos - targets[0]->rotatePos * scale;
-		}
-
-		if (timelim == 0)
-		{
-			for (auto& joint_scale : d_scale)
-			{
-				joint_scale.first->size += joint_scale.second;
-			}
-			for (auto& joint_position : d_position)
-			{
-				joint_position.first->pos += joint_position.second;
-			}
-			for (auto& joint_center : d_center)
-			{
-				joint_center.first->rotatePos += joint_center.second;
-			}
-		}
-	}
-
-	void update(Character* character, double dt = Scene::DeltaTime())override
-	{
-		dt = calTime(dt);
-		if (timelim == 0)return;
-		for (auto& joint_scale : d_scale)
-		{
-			joint_scale.first->size += (dt / timelim) * joint_scale.second;
-		}
-		for (auto& joint_scale : d_position)
-		{
-			joint_scale.first->pos += (dt / timelim) * joint_scale.second;
-		}
-		for (auto& joint_scale : d_center)
-		{
-			joint_scale.first->rotatePos += (dt / timelim) * joint_scale.second;
-		}
-	}
-};
 
 //class SetZ :public Move
 //{
@@ -456,19 +366,14 @@ public:
 			if (list.size() < 4)return new ChangeTexture(list[1], list[2]);
 			else return new ChangeTexture(list[1], list[2], Parse<double>(list[3]));
 		};
-		moveResolver[U"ChangeColor"] = [](const Array<String>& list) {
-			if (list.size() <= 7)return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]) };
-			else return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]),Parse<bool>(list[7]) };
+		moveResolver[U"ChangeColor"] = [](const Array<String>& list){
+			if(list.size()<=7)return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]) };
+			else return new ChangeColor{ list[1], ColorF{ Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]),Parse<double>(list[5]) }, Parse<double>(list[6]),Parse<bool>(list[7])};
 		};
 		moveResolver[U"ChangeScale"] = [](const Array<String>& list) {
 			if (list.size() < 6)return new ChangeScale{ list[1],Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]) };
 			else return new ChangeScale{ list[1],Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]) ,Parse<bool>(list[5]) };
 		};
-		moveResolver[U"BaseChangeScale"] = [](const Array<String>& list) {
-			if (list.size() < 6)return new BaseChangeScale{ list[1],Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]) };
-			else return new BaseChangeScale{ list[1],Parse<double>(list[2]),Parse<double>(list[3]),Parse<double>(list[4]) ,Parse<bool>(list[5]) };
-		};
-
 	}
 
 	Motion LoadMotion(String region = U"", bool debug = false) {
@@ -493,7 +398,7 @@ public:
 		Motion* tmpMotion = new Motion{ true };
 
 		bool addFlg = false;
-
+		
 		for (size_t row = index; row < tmpCsv.rows(); ++row)
 		{
 			if (tmpCsv.columns(row) == 0) {

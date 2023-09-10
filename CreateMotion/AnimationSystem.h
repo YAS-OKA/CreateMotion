@@ -1,5 +1,6 @@
 ﻿#pragma once
-#include<Siv3D.hpp>
+
+# include <Siv3D.hpp> // OpenSiv3D v0.6.6
 
 class Movable {
 public:
@@ -85,7 +86,7 @@ public:
 			for (auto& move : list) {
 				if (move->isActive()) {
 					move->update(character, t * speed);
-					active = true;
+					active |= true;
 				}
 			}
 		}
@@ -149,10 +150,6 @@ public:
 		movables.each([](Movable* movable) {movable->drawDebug(); });
 	}
 
-	void remove(Movable* movable) {
-		movables.remove(movable);
-	}
-
 	void clear() {
 		movables.clear();
 	}
@@ -173,10 +170,6 @@ public:
 	Joint(const Vec2& center, const Vec2& rotatePos, const String& textureName, double z, double scale)
 		:Movable{ center,TextureAsset{textureName}.size() * scale,rotatePos,0_deg,z }, textureName{ textureName } {}
 
-	void add(Joint* joint) {
-		joints << joint;
-	}
-
 	Array<Joint*> getAll()
 	{
 		Array<Joint*>result;
@@ -186,6 +179,10 @@ public:
 			result.append(joint->getAll());
 		}
 		return result;
+	}
+
+	void add(Joint* joint) {
+		joints << joint;
 	}
 
 	//Moveのあと
@@ -222,8 +219,6 @@ public:
 class Character {
 public:
 
-	Character* base = nullptr;
-
 	class Body {
 	public:
 		Joint joint;
@@ -255,11 +250,6 @@ public:
 			set(name, object[U"Parent"].getString(), object[U"Position"].get<Vec2>(), object[U"RotateCenter"].get<Vec2>(), object[U"TexturePath"].getString(), object[U"Z"].get<double>(), object[U"Scale"].get<double>());
 		}
 		complete();
-		setBase();
-	}
-
-	~Character() {
-		delete base;
 	}
 
 	void set(const String& name, const String& parentName, const Vec2& center, const Vec2& rotatePos, const String& textureName, double z, double scale) {
@@ -273,34 +263,10 @@ public:
 			if (it->second.parentName == U"__Main__") {
 				joint = &(it->second.joint);
 			}
-			else {
-				if (table.contains(it->second.parentName)) {
-					table[it->second.parentName].joint.add(&(it->second.joint));
-				}
-			}
+			else if (table.contains(it->second.parentName)) {
+				table[it->second.parentName].joint.add(&(it->second.joint));
+			}		
 		}
-	}
-
-	void removeDrawManager(DrawManager* manager) {
-
-		for (auto it = table.begin(); it != table.end(); ++it)
-		{
-			manager->remove(&it->second.joint);
-		}
-	}
-
-	void setBase() {
-		delete base;
-		base = new Character{};
-		base->angle = angle;
-		base->mirror = mirror;
-		base->scale = scale;
-		base->table = table;
-		base->complete();
-	}
-
-	Character* getBase() {
-		return base;
 	}
 
 	void setPos(const Vec2& pos) {
@@ -340,6 +306,10 @@ public:
 	}
 
 	Joint* get(const String& name) {
+		if (not table.contains(name))
+		{
+			return nullptr;
+		}
 		return &table[name].joint;
 	}
 
@@ -394,4 +364,3 @@ public:
 		return time < timelim;
 	}
 };
-
