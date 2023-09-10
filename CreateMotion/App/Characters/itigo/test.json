@@ -1,0 +1,28 @@
+﻿{
+  "Body": {
+    "1foot": {
+      "Parent": "body",
+      "Position": "(-42.38648, 104.42512)",
+      "RotateCenter": "(5.32365, -12.88887)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/itigo/1foot.png",
+      "Z": -10.0
+    },
+    "2foot": {
+      "Parent": "body",
+      "Position": "(34.66668, 104.00002)",
+      "RotateCenter": "(4.76329, -11.20771)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/itigo/2foot.png",
+      "Z": 0.0
+    },
+    "body": {
+      "Parent": "__Main__",
+      "Position": "(604.66669, 338.66665)",
+      "RotateCenter": "(0,0)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/itigo/body.png",
+      "Z": -5.0
+    }
+  }
+}

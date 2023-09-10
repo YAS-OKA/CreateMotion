@@ -11,7 +11,7 @@ void RegisterParts::start()
 
 void RegisterParts::update(double dt)
 {
-	if (SimpleGUI::Button(U"画像選択",pos))
+	if (SimpleGUI::Button(U"画像読込み",pos))
 	{
 		addParts(Dialog::OpenFiles({ FileFilter::AllImageFiles() }));
 	}
@@ -113,7 +113,7 @@ void Parts::set_params(const String& name, const String& param)
 		if (m_params[name]!=param and (System::MessageBoxOKCancel(U"TexturePathを変更しますか？") == MessageBoxResult::OK))
 		{
 			m_params[name] = param;
-			tex = Texture{ FileSystem::FullPath(U"CharacterImages/" + m_params[U"TexturePath"]),TextureDesc::Mipped };
+			tex = Texture{ FileSystem::FullPath(U"Characters/" + m_params[U"TexturePath"]),TextureDesc::Mipped };
 		}
 		return;
 	}

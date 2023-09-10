@@ -54,7 +54,7 @@ namespace mj
 		//パラメータの更新
 		void set_params(const String& name, const String& param);
 
-		const String& startPath= U"CharacterImages/";
+		const String& startPath= U"Characters/";
 		//親パーツ
 		Parts* PartsParent;
 

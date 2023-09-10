@@ -1,0 +1,11 @@
+#Attack
+RotateTo,base-body,20,0.5
+RotateTo,arm,45,0.5
+
+ChangeScale,arm,0.7,1,0
+RotateTo,base-body,-20,0.3
+Rotate,arm,-700,0.5
+
+ChangeScale,arm,1.42,1,0.5
+RotateTo,base-body,0,0.5
+RotateTo,arm,0,0.5,true
