@@ -193,7 +193,6 @@ public:
 		const Transformer2D t1{ Mat3x2::Translate(pos) };//中心をずらす
 		const Transformer2D t2{ Mat3x2::Rotate(angle,rotatePos) };//回転
 		mat = Graphics2D::GetLocalTransform();//変換行列を保存
-		if(not joints.isEmpty())
 		for (auto& joint : joints) {
 			joint->update();
 		}
@@ -223,7 +222,7 @@ public:
 class Character {
 public:
 
-	Character* base = nullptr;
+	std::unique_ptr<Character> base = nullptr;
 
 	class Body {
 	public:
@@ -259,10 +258,6 @@ public:
 		setBase();
 	}
 
-	~Character() {
-		delete base;
-	}
-
 	void set(const String& name, const String& parentName, const Vec2& center, const Vec2& rotatePos, const String& textureName, double z, double scale) {
 		TextureAsset::Register(textureName, textureName);
 		table[name] = Body{ Joint{center, rotatePos, textureName,z,scale},parentName };
@@ -272,7 +267,6 @@ public:
 		for (auto it = table.begin(); it != table.end(); ++it)
 		{
 			if (it->second.parentName == U"__Main__") {
-				auto j = &(it->second.joint);
 				joint = &(it->second.joint);
 			}
 			else {
@@ -292,8 +286,7 @@ public:
 	}
 
 	void setBase() {
-		delete base;
-		base = new Character{};
+		base = std::make_unique<Character>();
 		base->angle = angle;
 		base->mirror = mirror;
 		base->scale = scale;
@@ -302,7 +295,7 @@ public:
 	}
 
 	Character* getBase() {
-		return base;
+		return base.get();
 	}
 
 	void setPos(const Vec2& pos) {

@@ -52,6 +52,7 @@ public:
 		rad = baseRad;
 		Rotate::start(character);
 
+		//character->get(target)->angle = rad;
 		if (character->get(target) == nullptr)return;
 		if (timelim == 0)character->get(target)->angle = rad;
 
@@ -97,11 +98,13 @@ public:
 			character->get(target)->pos += dp;
 			return;
 		}
+		//character->get(target)->pos = { 100,100 };
 	}
 
 	void update(Character* character, double dt = Scene::DeltaTime())override {
 		dt = calTime(dt);
 		if (timelim == 0)return;
+		//rint << character->get(target)->pos;
 		if (character->get(target) == nullptr)return;
 		character->get(target)->pos += dt * dp / timelim;
 	}
@@ -166,6 +169,8 @@ public:
 		:TimeMove(time), color(color), target(target), following(following)
 	{}
 
+	//ChangeColor(const String& target,String )
+
 	void start(Character* character)override
 	{
 		TimeMove::start(character);
@@ -208,6 +213,8 @@ public:
 	ChangeScale(const String& target, double x_scale, double y_scale, double time, bool following = true)
 		:TimeMove(time), scale(SizeF{ x_scale,y_scale }), target(target), following(following)
 	{}
+
+	//ChangeColor(const String& target,String )
 
 	void start(Character* character)override
 	{
@@ -281,6 +288,21 @@ public:
 	}
 };
 
+//class BaseChangeScale :public ChangeScale {
+//
+//	BaseChangeScale(const String& target, double x_scale, double y_scale, double time, bool following = true) :ChangeScale{ target ,x_scale ,y_scale ,time ,following } {}
+//
+//	void start(Character* character)override {
+//		auto base=character->getBase()->get(target)->size;
+//		auto joint=character->get(target)->size;
+//
+//		auto nowScale = joint/base;
+//		
+//		ChangeScale::start(character);
+//	}
+//
+//
+//};
 class BaseChangeScale :public TimeMove
 {
 public:
@@ -294,6 +316,8 @@ public:
 	BaseChangeScale(const String& target, double x_scale, double y_scale, double time, bool following = true)
 		:TimeMove(time), scale(SizeF{ x_scale,y_scale }), target(target), following(following)
 	{}
+
+	//ChangeColor(const String& target,String )
 
 	void start(Character* character)override
 	{
@@ -326,12 +350,25 @@ public:
 
 		}
 
+		//for (auto& joint : targets)
+		//{
+		//	d_scale.emplace(joint, joint->size * scale - joint->size);
+		//	d_center.emplace(joint, joint->rotatePos * scale - joint->rotatePos);
+		//	d_position.emplace(joint, joint->pos * scale - joint->pos);
+		//	if (not flag)
+		//	{
+		//		flag = true;
+
+		//	}
+		//}
+
 		if (targets[0] == character->joint)
 		{
 			d_position[targets[0]] = (-targets[0]->rotatePos) * scale;
 		}
 		else
 		{
+			//d_position[targets[0]] = { 0,0 };
 			d_position[targets[0]] = targets[0]->rotatePos - targets[0]->rotatePos * scale;
 		}
 
@@ -541,7 +578,9 @@ public:
 	}
 };
 
-bool MotionSelect(String ButtonMessage, Vec2 pos, Optional<String>& Path, FileFilter filter)
+
+//ファイルを読み込む関数
+bool FileSelect(String ButtonMessage, Vec2 pos, Optional<String>& Path, FileFilter filter)
 {
 	bool flag=false;
 	if (SimpleGUI::Button(ButtonMessage, pos))
@@ -558,71 +597,72 @@ bool MotionSelect(String ButtonMessage, Vec2 pos, Optional<String>& Path, FileFi
 
 void Main()
 {
+	//ウィンドウのリサイズに対応させたい...
 	int32 window_w = 1200, window_h = 700;
 	Window::Resize(window_w, window_h);
-	//for (auto& elem : mj::JsonElems)  //なぜかJsonElems変更できない...
-	//	if (elem.first == U"Position")
-	//		elem.second = Format(Vec2{ window_w / 2, window_h/2 });
-
-	//for (auto& elem : mj::JsonElems) {
-	//	Print << elem;
-	//}
 
 	MyEditor editor;
 	//==========体の用意==========
+	//最初は空だ(体)なんつって
 	Character character{ JSON::Load(U""),2 };
 	Character start_character{ JSON::Load(U""),2 };
 
 	MotionLoader loader{ CSV{U""} };
 
-	//Motion motion =
 	loader.LoadMotion();
 
 	//==========描画に追加==========
 	DrawManager manager;
-
+	
 	Optional<String> JsonPath;
 	Optional<String> MotionPath;
-
+	//モーションに自作カメラを転用
 	mj::EditorsCamera camera;
 	camera.start();
 
+	//UIとかの変数　フラグとか
 	double UiStartY = 90;
 	bool drawFlg = true, debugFlg = false;
 	bool jsonOk = false, motionOk = false;
 	bool touchGround = false;
 	TextEditState text;
-
+	//倍速
 	double timeScale = 1.0;
 	TextEditState timeScaleText{U"1.0"};
+
 	Font font1{ 25 };
 
 	while (System::Update())
 	{
-		ClearPrint();
+		//キャラクターのjointがnullならJsonOK=false
 		jsonOk = character.joint != nullptr;
+		//モーションパスが通っていなければmotionOk=false
 		motionOk = MotionPath.has_value();
 
+		//モデルエディタにいる状態ならここから下の処理を行わない
 		if (editor.working) {
 			editor.update();
 			editor.draw();
 			continue;
 		}
+		//ここからはモーションをテストするシーンの処理
 
-		if (MotionSelect(U"モデル読み込み", {10,10}, JsonPath,FileFilter::JSON()))
+		//動かすモデルを選択
+		if (FileSelect(U"モデル読み込み", {10,10}, JsonPath,FileFilter::JSON()))
 		{
-			//モーションの画面に初めて移ったときの処理
 			if (JsonPath) {
 				character = Character{ JSON::Load(*JsonPath),2 };
 				manager.clear();
 				character.setDrawManager(&manager);
 			}
 		}
-		if (MotionSelect(U"スクリプト", {10,50}, MotionPath,FileFilter::Text()))
+		//モデルに適用するスクリプトを選択
+		if (FileSelect(U"スクリプト", {10,50}, MotionPath,FileFilter::Text()))
 		{
 			if (MotionPath)loader = MotionLoader{ CSV{*MotionPath} };
 		}
 
+		//キャラクターを読み直すことでリセット(今後はベースを参照してリセットできるようにする)
 		if (SimpleGUI::Button(U"リセット", { 10,UiStartY + 40 }))
 		{
 			if (JsonPath) {
@@ -632,6 +672,7 @@ void Main()
 			}
 		}
 
+		//UI
 		SimpleGUI::CheckBox(drawFlg, U"通常表示", Vec2{ 10, UiStartY+90 }, 160);
 		SimpleGUI::CheckBox(debugFlg, U"デバッグ表示", Vec2{ 10, UiStartY+130 }, 160);
 		SimpleGUI::CheckBox(touchGround, U"地面に着かせる", Vec2{ 10,UiStartY + 170 }, 180);
@@ -643,19 +684,22 @@ void Main()
 			timeScale = Parse<double>(timeScaleText.text);
 		}
 		catch (...){}
-
+		//実行ボタン
 		if (SimpleGUI::Button(U"実行", Vec2{ 10, UiStartY },unspecified,jsonOk and motionOk)) {
 			MotionLoader l{ CSV{*MotionPath} };
 			character.motions.clear();
 			character.addMotion(l.LoadMotion(text.text, true));
 		}
+		//地面
 		RectF ground{ 0,500,Scene::Width()*2,100};
+
+		//キャラクターなどの処理
 		{
+			//自作カメラクラスからTransformer2Dを取得
 			const auto t = camera.getTransformer2D(true);
 
 			if (touchGround)ground .draw(Palette::Green);
-
-
+			//Jsonが読み込まれている(モデルが読み込まれている)ならキャラクター等をupdate & draw
 			if (jsonOk) {
 				if (touchGround)character.touchGround(500);
 				character.update(timeScale*Scene::DeltaTime());
@@ -665,11 +709,12 @@ void Main()
 				if (debugFlg)manager.drawDebug();
 			}
 		}
-
+		//エディタの方に戻るボタン
 		if (SimpleGUI::Button(U"モデルエディタへ", { 20,Scene::Height() - 55 }))
 		{
 			editor.working = true;
 		}
+		//自作カメラアップデート
 		camera.update(Scene::DeltaTime());
 	}
 }
