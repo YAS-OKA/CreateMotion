@@ -4,6 +4,7 @@
 
 namespace mj
 {
+	class Parts;
 	class EditorsCamera;
 }
 
@@ -17,6 +18,11 @@ public:
 
 	void update(double dt=Scene::DeltaTime());
 	void draw()const;
+	void select(mj::Parts* parts);
+	//移動、回転を切り替える
+	size_t index;
+	//パーツを検索して選択する
+	TextEditState selectText;
 
 	bool working;
 };

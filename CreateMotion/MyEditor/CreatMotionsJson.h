@@ -42,6 +42,8 @@ namespace mj
 
 		void MoveBy(const String& targetParameter,const Vec2& delta);
 
+		void Rotate(double d_rad);
+
 		/*const Circle& getRotateCenterCircle();
 
 		const RectF& get_region();*/
@@ -59,6 +61,11 @@ namespace mj
 		Parts* PartsParent;
 
 		Vec2 ParentPos;
+
+		Vec2 texCenter() const { return Parse<double>(params(U"Scale")) * tex.size()/ 2; }
+		double rad = 0;
+		//パーツを描くか
+		bool egaku;
 	private:
 		String path;
 		HashTable<String, String>m_params;
@@ -84,6 +91,7 @@ namespace mj
 		void makeCollider(Parts* parts,const String& path);
 		bool mouseOver(Parts* parts);
 		void removeColliderOf(Parts* parts);
+		MultiPolygon getCollider(Parts* parts)const;
 	private:
 		HashTable<Parts*, MultiPolygon> colliders;
 	};
@@ -98,6 +106,31 @@ namespace mj
 	protected:
 		Parts* selectedParts;
 	};
+
+	class RotateParts :public component::Component
+	{
+	public:
+		void start()override;
+		virtual void update(double dt)override;
+		void select(Parts* parts);
+	protected:
+		Parts* selectedParts;
+	};
+
+	class LightUpParts :public component::Component
+	{
+	public:
+		void start()override;
+		void update(double dt)override;
+		void draw()const override;
+		void select(Parts* parts);
+	private:
+		MultiPolygon hitbox;
+		Parts* selectedParts;
+		int32 thick;
+		ColorF lineColor;
+	};
+
 	//RotateCenterを動かす
 	class MoveRotateCenter :public MoveParts
 	{

@@ -151,8 +151,15 @@ void Parts::MoveBy(const String& target,const Vec2& delta)
 	}
 }
 
+void Parts::Rotate(double d)
+{
+	rad += d;
+}
+
 void Parts::start()
 {
+	egaku = true;
+	rad = 0;
 	tex = Texture{ path,TextureDesc::Mipped };
 	GetComponent<PartsColliders>()->makeCollider(this, path);
 }
@@ -165,6 +172,8 @@ void Parts::update(double dt)
 
 void Parts::draw()const
 {
+	if (not egaku)return;
+	auto t = Transformer2D{ Mat3x2::Rotate(rad,	absPos() + Parse<Vec2>(params(U"RotateCenter")))};
 	tex.scaled(Parse<double>(params(U"Scale"))).drawAt(absPos());
 }
 
@@ -187,6 +196,7 @@ void RotateCenter::start()
 {
 	parts = nullptr;
 	circle = { 0,0,3 };
+	priority.setDraw(Math::Inf);
 }
 
 void RotateCenter::update(double dt)
@@ -211,12 +221,19 @@ void PartsColliders::makeCollider(Parts* parts, const String& path)
 
 bool PartsColliders::mouseOver(Parts* parts)
 {
-	return colliders[parts].movedBy(parts->absPos()).mouseOver();
+	return colliders[parts].movedBy(parts->absPos())
+		.rotateAt(parts->absPos() + Parse<Vec2>(parts->params(U"RotateCenter")),parts->rad)
+		.mouseOver();
 }
 
 void PartsColliders::removeColliderOf(Parts* parts)
 {
 	colliders.erase(parts);
+}
+
+MultiPolygon PartsColliders::getCollider(Parts* parts)const
+{
+	return colliders.at(parts).movedBy(parts->absPos()).rotatedAt(parts->absPos() + Parse<Vec2>(parts->params(U"RotateCenter")), parts->rad);
 }
 
 void MoveParts::start()
@@ -234,6 +251,51 @@ void MoveParts::update(double dt)
 void MoveParts::select(Parts* parts)
 {
 	selectedParts = parts;
+}
+
+void RotateParts::start()
+{
+	selectedParts = nullptr;
+}
+
+void RotateParts::update(double dt)
+{
+	const auto t = GetComponent<EditorsCamera>()->getTransformer2D(true);
+	if (selectedParts != nullptr) {
+		Vec2 center = selectedParts->absPos() + Parse<Vec2>(selectedParts->params(U"RotateCenter"));
+		selectedParts->Rotate((Cursor::PosF() - center).getAngle() - (Cursor::PosF() - Cursor::DeltaF() - center).getAngle());
+	}
+}
+
+void RotateParts::select(Parts* parts)
+{
+	selectedParts = parts;
+}
+
+void LightUpParts::start()
+{
+	selectedParts = nullptr;
+	thick = 2;
+	lineColor = ColorF{ Palette::Cyan };
+	priority.setDraw(Math::Inf);
+}
+
+void LightUpParts::update(double dt)
+{
+	if (selectedParts == nullptr)return;
+	hitbox = GetComponent<PartsColliders>()->getCollider(selectedParts);
+}
+
+void LightUpParts::draw()const
+{
+	if (selectedParts == nullptr)return;
+	hitbox.drawFrame(thick,lineColor);
+}
+
+void LightUpParts::select(Parts* parts)
+{
+	selectedParts = parts;
+	hitbox=GetComponent<PartsColliders>()->getCollider(selectedParts);
 }
 
 void MoveRotateCenter::update(double dt)
@@ -260,7 +322,8 @@ void EditParts::start()
 		texts.emplace(elem.first, TextEditState());
 	}
 	font = Font{ 15 };
-	hiddenList = {U"Position",U"RotateCenter"};
+	//ScaleはRotateCenter中心に変更　まだ対応してないので非表示に
+	hiddenList = {U"Position",U"RotateCenter",U"Scale"};
 	h = 50;
 
 	for (const auto& text : texts)
