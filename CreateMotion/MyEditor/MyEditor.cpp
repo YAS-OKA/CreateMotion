@@ -5,7 +5,7 @@
 MyEditor::MyEditor()
 {
 	working = true;
-	index = 0;
+	//index = 0;
 	
 	AddComponent<mj::RegisterParts>();
 	AddComponent<mj::EditParts>();
@@ -17,51 +17,48 @@ MyEditor::MyEditor()
 	AddComponent<mj::PartsColliders>();
 	AddComponent<mj::RotateCenter>();
 	AddComponent<mj::LightUpParts>();
+	//AddComponent<mj::MakeRectF>();
 }
 
 void MyEditor::update(double dt)
 {
 	update_components(dt);
 
-	mj::updateParentPos(GetComponentArr<mj::Parts>());
+	updateParentPos(GetComponentArr<mj::Parts>());
 
-	SimpleGUI::RadioButtons(index, { U"移動",U"回転" }, { 10,170 });
-
-	SimpleGUI::TextBox(selectText, { Scene::Width() - 205,300 });
-	for (auto& parts : GetComponentArr<mj::Parts>(false))
+	mj::MoveParts* comp = GetComponent<mj::MoveParts>();
+	if (comp != nullptr)
 	{
-		//if (parts->get_region().mouseOver())
-		if (parts->name == selectText.text)
+		comp->parts_key_parent = parts_key_parent;
+	};
+
+	//SimpleGUI::RadioButtons(index, { U"移動",U"回転" }, { 10,170 });
+
+	mj::MakeHitbox* hitboxSetter=GetComponent<mj::MakeHitbox>();
+
+	Array<mj::Parts*> partsArray = hitboxSetter == nullptr ? GetComponentArr<mj::Parts>(false):hitboxSetter->hitboxs;
+
+	if (SimpleGUI::TextBox(selectText, { Scene::Width() - 205,300 })) {
+		for (auto& parts : partsArray)
 		{
-			select(parts);
-			break;
+			if (parts->name == selectText.text)
+			{
+				select(parts);
+				break;
+			}
 		}
-
 	}
-
 	//パーツの選択
 	if (MouseL.up())
 	{
 		const auto t = camera->getTransformer2D(true);
-		bool find = false;
-		for (auto& parts : GetComponentArr<mj::Parts>(false))
+		for (auto& parts : partsArray)
 		{
-			//if (parts->get_region().mouseOver())
 			if(GetComponent<mj::PartsColliders>()->mouseOver(parts))
 			{
 				select(parts);
-				find = true;
 				break;
 			}
-		}
-		if (not find)
-		{
-			remove<mj::EditParts>();
-			remove<mj::RotateCenter>();
-			remove<mj::LightUpParts>();
-			AddComponent<mj::EditParts>();
-			AddComponent<mj::RotateCenter>();
-			AddComponent<mj::LightUpParts>();
 		}
 	}
 	//パーツを動かす つかむ
@@ -71,15 +68,15 @@ void MyEditor::update(double dt)
 
 		if (GetComponent<mj::RotateCenter>()->mouseOver())
 		{
-			if(index==0)AddComponent<mj::MoveRotateCenter>()->select(GetComponent<mj::EditParts>()->get_selectedParts());
+			/*if(index==0)*/AddComponent<mj::MoveRotateCenter>()->select(GetComponent<mj::EditParts>()->get_selectedParts());
 		}
 		else {
 			for (auto& parts : GetComponentArr<mj::Parts>(false))
 			{
 				if (GetComponent<mj::EditParts>()->get_selectedParts()==parts and GetComponent<mj::PartsColliders>()->mouseOver(parts))
 				{
-					if (index == 0)AddComponent<mj::MoveParts>()->select(parts);
-					else AddComponent<mj::RotateParts>()->select(parts);
+					/*if (index == 0)*/AddComponent<mj::MoveParts>()->select(parts);
+					//else AddComponent<mj::RotateParts>()->select(parts);
 					break;
 				}
 			}
@@ -90,7 +87,20 @@ void MyEditor::update(double dt)
 	{
 		remove<mj::MoveParts>();
 		remove<mj::MoveRotateCenter>();
-		remove<mj::RotateParts>();
+		//remove<mj::RotateParts>();
+	}
+
+	//当たり判定配置モードの切り替え
+	if (SimpleGUI::Button(hitboxSetter!=nullptr ? U"戻る" : U"当たり判定", {10,300}))
+	{
+		if (GetComponent<mj::MakeHitbox>() == nullptr){
+			AddComponent<mj::MakeHitbox>();
+			AddComponent<mj::MakeRectF>();
+		}
+		else {
+			remove<mj::MakeHitbox>();
+			remove<mj::MakeRectF>();
+		}
 	}
 }
 
@@ -108,4 +118,45 @@ void MyEditor::select(mj::Parts* parts)
 	GetComponent<mj::EditParts>()->select(parts);
 	GetComponent<mj::RotateCenter>()->setParts(parts);
 	GetComponent<mj::LightUpParts>()->select(parts);
+}
+
+
+void MyEditor::updateParentPos(Array<mj::Parts*> parts_list)
+{
+	parts_key_parent.clear();
+	Array<mj::Parts*>parents;
+	Array<mj::Parts*>nextParents;
+	//最初の親(親なしのパーツ)を探しつつparts_key_parentを構築
+	for (auto& parts : parts_list)
+	{
+		if (not parts_list.contains(parts->PartsParent))
+		{
+			parts->PartsParent = nullptr;
+			parts->ParentPos = { 0,0 };
+			parents << parts;
+		}
+		else {
+			parts_key_parent[parts->PartsParent] << parts;
+		}
+	}
+	//幅優先で更新していく
+	while (not parents.isEmpty()) {
+		for (const auto& parent : parents)
+		{
+			if (not parts_key_parent.contains(parent))continue;
+
+			for (auto& partsChiled : parts_key_parent[parent])
+			{
+				//更新
+				partsChiled->ParentPos = parent->absPos();
+				nextParents << partsChiled;
+			}
+		}
+		parents.clear();
+		for (auto& nextParent : nextParents)
+		{
+			parents << nextParent;
+		}
+		nextParents.clear();
+	}
 }

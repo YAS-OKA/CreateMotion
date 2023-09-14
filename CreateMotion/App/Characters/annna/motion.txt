@@ -1,0 +1,11 @@
+#test
+@accum,0.5
+Move,body,-50,0,@accum
+RotateTo,body,-30,@accum
+RotateTo,waist,30,@accum
+
+Wait,0.4
+
+Move,body,70,0,0.5
+
+Move,body,-20,0,0.4

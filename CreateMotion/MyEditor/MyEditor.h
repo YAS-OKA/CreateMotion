@@ -19,11 +19,16 @@ public:
 	void update(double dt=Scene::DeltaTime());
 	void draw()const;
 	void select(mj::Parts* parts);
+
+	void updateParentPos(Array<mj::Parts*> parts_list);
+
 	//移動、回転を切り替える
-	size_t index;
+	//size_t index;
 	//パーツを検索して選択する
 	TextEditState selectText;
 
 	bool working;
+
+	HashTable<mj::Parts*, Array<mj::Parts*>>parts_key_parent;
 };
 

@@ -151,10 +151,17 @@ void Parts::MoveBy(const String& target,const Vec2& delta)
 	}
 }
 
-void Parts::Rotate(double d)
-{
-	rad += d;
-}
+//void Parts::Rotate(double d)
+//{
+//	rad += d;
+//}
+//
+//void Parts::RotateAt(const Vec2& pos, double d)
+//{
+//	rad += d;
+//	Vec2 d_pos = absPos().rotateAt(pos, d) + absPos().rotateAt(Parse<Vec2>(params(U"RotateCenter")) + absPos(), d);
+//	MoveBy(d_pos,)
+//}
 
 void Parts::start()
 {
@@ -209,6 +216,7 @@ void RotateCenter::draw()const
 {
 	if (parts == nullptr)return;
 	circle.draw(Palette::Red);
+	circle.drawFrame(0,1, Palette::Darkblue);
 }
 
 void PartsColliders::makeCollider(Parts* parts, const String& path)
@@ -245,7 +253,24 @@ void MoveParts::update(double dt)
 {
 	//カメラの位置や拡大縮小を考慮
 	const auto t = GetComponent<EditorsCamera>()->getTransformer2D(true);
-	if (selectedParts != nullptr)selectedParts->MoveBy(U"Position",Cursor::DeltaF());
+	if (selectedParts == nullptr)return;
+	selectedParts->MoveBy(U"Position", Cursor::DeltaF());
+
+	moveChiled(Cursor::DeltaF());
+}
+
+void MoveParts::moveChiled(const Vec2& delta)
+{
+	Array<Parts*> nextParts = { selectedParts };
+	while (not nextParts.isEmpty())
+	{
+		for (auto& parts : parts_key_parent[nextParts[0]])
+		{
+			parts->MoveBy(U"Position", delta);
+			nextParts << parts;
+		}
+		nextParts.pop_front();
+	}
 }
 
 void MoveParts::select(Parts* parts)
@@ -253,24 +278,38 @@ void MoveParts::select(Parts* parts)
 	selectedParts = parts;
 }
 
-void RotateParts::start()
-{
-	selectedParts = nullptr;
-}
+//void RotateParts::start()
+//{
+//	selectedParts = nullptr;
+//}
+//
+//void RotateParts::update(double dt)
+//{
+//	const auto t = GetComponent<EditorsCamera>()->getTransformer2D(true);
+//	if (selectedParts == nullptr) return;
+//	Vec2 center = selectedParts->absPos() + Parse<Vec2>(selectedParts->params(U"RotateCenter"));
+//	selectedParts->Rotate((Cursor::PosF() - center).getAngle() - (Cursor::PosF() - Cursor::DeltaF() - center).getAngle());
+//	rotateChiled((Cursor::PosF() - center).getAngle() - (Cursor::PosF() - Cursor::DeltaF() - center).getAngle());
+//}
+//
+//void RotateParts::select(Parts* parts)
+//{
+//	selectedParts = parts;
+//}
 
-void RotateParts::update(double dt)
-{
-	const auto t = GetComponent<EditorsCamera>()->getTransformer2D(true);
-	if (selectedParts != nullptr) {
-		Vec2 center = selectedParts->absPos() + Parse<Vec2>(selectedParts->params(U"RotateCenter"));
-		selectedParts->Rotate((Cursor::PosF() - center).getAngle() - (Cursor::PosF() - Cursor::DeltaF() - center).getAngle());
-	}
-}
-
-void RotateParts::select(Parts* parts)
-{
-	selectedParts = parts;
-}
+//void RotateParts::rotateChiled(double delta)
+//{
+//	Array<Parts*> nextParts = { selectedParts };
+//	while (not nextParts.isEmpty())
+//	{
+//		for (auto& parts : parts_key_parent[nextParts[0]])
+//		{
+//			parts->MoveBy(U"Position",{parts})
+//			nextParts << parts;
+//		}
+//		nextParts.pop_front();
+//	}
+//}
 
 void LightUpParts::start()
 {
@@ -650,42 +689,26 @@ Vec2 LoadJson::_getAbsPos(Parts* parts)
 	return Parse<Vec2>(parts->params(U"Position"))+_getAbsPos(parts->PartsParent);
 }
 
-void mj::updateParentPos(Array<Parts*> parts_list)
+void MakeHitbox::update(double dt)
 {
-	HashTable<Parts*, Array<Parts*>>parts_key_parent;
-	Array<Parts*>parents;
-	Array<Parts*>nextParents;
-	//最初の親(親なしのパーツ)を探しつつparts_key_parentを構築
-	for (auto& parts : parts_list)
-	{
-		if (not parts_list.contains(parts->PartsParent))
-		{
-			parts->PartsParent = nullptr;
-			parts->ParentPos = { 0,0 };
-			parents << parts;
-		}
-		else {
-			parts_key_parent[parts->PartsParent] << parts;
-		}
-	}
-	//幅優先で更新していく
-	while (not parents.isEmpty()) {
-		for (const auto& parent : parents)
-		{
-			if (not parts_key_parent.contains(parent))continue;
 
-			for (auto& partsChiled : parts_key_parent[parent])
-			{
-				//更新
-				partsChiled->ParentPos = parent->absPos();
-				nextParents << partsChiled;
-			}
-		}
-		parents.clear();
-		for (auto& nextParent : nextParents)
-		{
-			parents << nextParent;
-		}
-		nextParents.clear();
+}
+
+void MakeHitbox::draw()const
+{
+
+}
+
+void MakeRectF::update(double dt)
+{
+	if (MouseL.down())
+	{
+		startPos = Cursor::PosF();
 	}
+	if(MouseL.pressed())rect = RectF{ startPos,Cursor::PosF()-startPos };
+}
+
+RectF MakeRectF::getRect()
+{
+	return rect;
 }

@@ -42,7 +42,9 @@ namespace mj
 
 		void MoveBy(const String& targetParameter,const Vec2& delta);
 
-		void Rotate(double d_rad);
+		//void Rotate(double d_rad);
+
+		//void RotateAt(const Vec2& pos, double d_rad);
 
 		/*const Circle& getRotateCenterCircle();
 
@@ -99,23 +101,26 @@ namespace mj
 	class MoveParts :public component::Component
 	{
 	public:
-		virtual ~MoveParts() {};
 		void start()override;
 		virtual void update(double dt)override;
+		void moveChiled(const Vec2& delta);
 		void select(Parts* parts);
+		HashTable<Parts*, Array<Parts*>>parts_key_parent;
 	protected:
 		Parts* selectedParts;
 	};
 
-	class RotateParts :public component::Component
-	{
-	public:
-		void start()override;
-		virtual void update(double dt)override;
-		void select(Parts* parts);
-	protected:
-		Parts* selectedParts;
-	};
+	//class RotateParts :public component::Component
+	//{
+	//public:
+	//	void start()override;
+	//	virtual void update(double dt)override;
+	//	void select(Parts* parts);
+	//	void rotateChiled(double delta);
+	//	HashTable<Parts*, Array<Parts*>>parts_key_parent;
+	//protected:
+	//	Parts* selectedParts;
+	//};
 
 	class LightUpParts :public component::Component
 	{
@@ -221,6 +226,26 @@ namespace mj
 		Vec2 pos;
 	};
 
-	void updateParentPos(Array<Parts*> parts_list);
+	class MakeHitbox: public component::Component
+	{
+	public:
+		void update(double dt)override;
+
+		void draw()const override;
+
+		Array<Parts*> hitboxs;
+	};
+
+	class MakeRectF :public component::Component
+	{
+	public:
+		void update(double dt)override;
+		
+		RectF getRect();
+
+		Vec2 startPos;
+
+		RectF rect;
+	};
 }
 

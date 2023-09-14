@@ -5,7 +5,39 @@
       "Position": "(600, 350)",
       "RotateCenter": "(0,0)",
       "Scale": 1.0,
-      "TexturePath": "CharacterImages/timkun/body.bmp",
+      "TexturePath": "Characters/timkun/body.bmp",
+      "Z": -10.0
+    },
+    "larm": {
+      "Parent": "body",
+      "Position": "(-27.87593, 1.04909)",
+      "RotateCenter": "(9.29192, -0.14987)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/timkun/larm.bmp",
+      "Z": -10.0
+    },
+    "lhand": {
+      "Parent": "larm",
+      "Position": "(-7.9432, 12.43931)",
+      "RotateCenter": "(-0.29974, -9.59169)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/timkun/lhand.bmp",
+      "Z": -10.0
+    },
+    "rarm": {
+      "Parent": "body",
+      "Position": "(29.07499, 0.29978)",
+      "RotateCenter": "(-9.74152, 0.14984)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/timkun/rarm.bmp",
+      "Z": -10.0
+    },
+    "rhand": {
+      "Parent": "rarm",
+      "Position": "(7.04384, 11.68991)",
+      "RotateCenter": "(-0.44966, -9.14209)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/timkun/rhand.bmp",
       "Z": -10.0
     }
   }
