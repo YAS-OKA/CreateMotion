@@ -17,6 +17,7 @@ MyEditor::MyEditor()
 	AddComponent<mj::PartsColliders>();
 	AddComponent<mj::RotateCenter>();
 	AddComponent<mj::LightUpParts>();
+	AddComponent<mj::MakeHitbox>();
 	//AddComponent<mj::MakeRectF>();
 }
 
@@ -36,7 +37,7 @@ void MyEditor::update(double dt)
 
 	mj::MakeHitbox* hitboxSetter=GetComponent<mj::MakeHitbox>();
 
-	Array<mj::Parts*> partsArray = hitboxSetter == nullptr ? GetComponentArr<mj::Parts>(false):hitboxSetter->hitboxs;
+	Array<mj::Parts*>partsArray = hitboxSetter->setting ? hitboxSetter->hitboxs : GetComponentArr<mj::Parts>(false);
 
 	if (SimpleGUI::TextBox(selectText, { Scene::Width() - 205,300 })) {
 		for (auto& parts : partsArray)
@@ -71,7 +72,7 @@ void MyEditor::update(double dt)
 			/*if(index==0)*/AddComponent<mj::MoveRotateCenter>()->select(GetComponent<mj::EditParts>()->get_selectedParts());
 		}
 		else {
-			for (auto& parts : GetComponentArr<mj::Parts>(false))
+			for (auto& parts : partsArray)
 			{
 				if (GetComponent<mj::EditParts>()->get_selectedParts()==parts and GetComponent<mj::PartsColliders>()->mouseOver(parts))
 				{
@@ -91,16 +92,12 @@ void MyEditor::update(double dt)
 	}
 
 	//当たり判定配置モードの切り替え
-	if (SimpleGUI::Button(hitboxSetter!=nullptr ? U"戻る" : U"当たり判定", {10,300}))
+	if (SimpleGUI::Button(hitboxSetter->setting ? U"戻る" : U"当たり判定", {10,300}))
 	{
-		if (GetComponent<mj::MakeHitbox>() == nullptr){
-			AddComponent<mj::MakeHitbox>();
-			AddComponent<mj::MakeRectF>();
-		}
-		else {
-			remove<mj::MakeHitbox>();
-			remove<mj::MakeRectF>();
-		}
+		hitboxSetter->setting = not hitboxSetter->setting;
+		GetComponent<mj::EditParts>()->releaseParts();
+		GetComponent<mj::RotateCenter>()->releaseParts();
+		GetComponent<mj::LightUpParts>()->releaseParts();
 	}
 }
 

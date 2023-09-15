@@ -1,5 +1,13 @@
 ﻿{
   "Body": {
+    "Hitbox": {
+      "Parent": "base-body",
+      "Position": "(-17.66668, 33.66669)",
+      "RotateCenter": "(0,0)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/yukidaruma/hitbox.png",
+      "Z": -10.0
+    },
     "arm": {
       "Parent": "base-body",
       "Position": "(0, 0)",

@@ -5,6 +5,7 @@
 namespace mj
 {
 	class Parts;
+	class MakeHitbox;
 	class EditorsCamera;
 }
 
@@ -26,6 +27,8 @@ public:
 	//size_t index;
 	//パーツを検索して選択する
 	TextEditState selectText;
+
+	mj::MakeHitbox* hitboxSetter;
 
 	bool working;
 

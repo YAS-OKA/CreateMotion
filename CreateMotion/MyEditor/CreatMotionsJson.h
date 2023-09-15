@@ -16,6 +16,7 @@ namespace mj
 		mp{U"Z",U"-10"},
 		mp{U"Scale",U"1"},
 	};
+	class Parts;
 	//画面内にPartsを追加する
 	class RegisterParts:public component::Component
 	{
@@ -23,7 +24,7 @@ namespace mj
 		void start()override;
 		void update(double dt)override;
 
-		void addParts(const Array<FilePath>& path);
+		Array<Parts*> addParts(const Array<FilePath>& path);
 	private:
 		Vec2 pos;
 	};
@@ -36,9 +37,9 @@ namespace mj
 	public:
 		Parts(const FilePath& path);
 		Parts(HashTable<String,String>params);
-		void start()override;
-		void update(double dt)override;
-		void draw()const override;
+		virtual void start()override;
+		virtual void update(double dt)override;
+		virtual void draw()const override;
 
 		void MoveBy(const String& targetParameter,const Vec2& delta);
 
@@ -68,11 +69,21 @@ namespace mj
 		double rad = 0;
 		//パーツを描くか
 		bool egaku;
-	private:
+	protected:
 		String path;
 		HashTable<String, String>m_params;
 		Texture tex;
 	};
+
+	class HitboxParts :public Parts
+	{
+	public:
+		HitboxParts(const FilePath& path);
+		void start();
+		void update(double dt);
+		void draw()const;
+	};
+
 	class RotateCenter :public component::Component
 	{
 	public:
@@ -128,6 +139,9 @@ namespace mj
 		void start()override;
 		void update(double dt)override;
 		void draw()const override;
+		//パーツを解放
+		void releaseParts();
+
 		void select(Parts* parts);
 	private:
 		MultiPolygon hitbox;
@@ -229,10 +243,15 @@ namespace mj
 	class MakeHitbox: public component::Component
 	{
 	public:
+		~MakeHitbox() { if (startPos != nullptr)delete startPos; }
+		void start()override;
 		void update(double dt)override;
-
 		void draw()const override;
 
+		Vec2* startPos;
+		bool setting;
+		bool flag;
+		Rect rect;
 		Array<Parts*> hitboxs;
 	};
 

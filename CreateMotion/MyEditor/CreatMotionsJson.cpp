@@ -17,12 +17,14 @@ void RegisterParts::update(double dt)
 	}
 }
 
-void RegisterParts::addParts(const Array<FilePath>& path)
+Array<Parts*> RegisterParts::addParts(const Array<FilePath>& path)
 {
+	Array<Parts*> parts;
 	for (const auto& p : path)
 	{
-		AddComponent<Parts>(new Parts(p));
+		parts<<AddComponent<Parts>(new Parts(p));
 	}
+	return parts;
 }
 
 Parts::Parts(const FilePath& path)
@@ -184,6 +186,34 @@ void Parts::draw()const
 	tex.scaled(Parse<double>(params(U"Scale"))).drawAt(absPos());
 }
 
+HitboxParts::HitboxParts(const FilePath& path)
+	:Parts(path)
+{
+	name = U"Hitbox";
+}
+
+void HitboxParts::start()
+{
+	egaku = true;
+	rad = 0;
+	tex = Texture{ path,TextureDesc::Mipped };
+	Image{ Texture{ path,TextureDesc::Mipped }.size(),ColorF{Palette::Red} }.save(path);
+	GetComponent<PartsColliders>()->makeCollider(this, path);
+	Image{ Texture{ path,TextureDesc::Mipped }.size(),ColorF{0,0,0,0} }.save(path);
+	priority.setDraw(Math::Inf);
+}
+
+void HitboxParts::update(double dt)
+{
+	egaku = GetComponent<MakeHitbox>()->setting;
+}
+
+void HitboxParts::draw()const
+{
+	if (not egaku)return;
+	tex.drawAt(absPos());
+}
+
 void RotateCenter::setParts(Parts* p)
 {
 	parts = p;
@@ -335,6 +365,11 @@ void LightUpParts::select(Parts* parts)
 {
 	selectedParts = parts;
 	hitbox=GetComponent<PartsColliders>()->getCollider(selectedParts);
+}
+
+void LightUpParts::releaseParts()
+{
+	selectedParts = nullptr;
 }
 
 void MoveRotateCenter::update(double dt)
@@ -537,7 +572,7 @@ void SaveParts::update(double dt)
 			}
 
 		if (mainParts == nullptr and System::MessageBoxOK(U"__Main__パーツを設定してください")==MessageBoxResult::OK)return;
-
+	
 		for (const auto& parts : GetComponentArr<Parts>())
 		{
 			if (parts->PartsParent == nullptr and parts != mainParts)
@@ -559,6 +594,26 @@ void SaveParts::update(double dt)
 				json[U"Body"][parts->name][elem.first] = parts->params(elem.first);
 			}
 		}
+		//あたりはんていパーツ
+		for (const auto& hitbox : GetComponentArr<HitboxParts>())
+		{
+			hitbox->set_params(U"Parent", mainParts->name);
+			for (const auto& elem : JsonElems)
+			{
+				if (elem.first == U"TexturePath")
+				{//テクスチャーパスをStartPathからの相対に
+					json[U"Body"][hitbox->name][elem.first] = hitbox->startPath + hitbox->params(elem.first);
+					continue;
+				}
+				else if ((elem.first == U"Scale") or (elem.first == U"Z"))
+				{//ScaleやZを数値に変換
+					json[U"Body"][hitbox->name][elem.first] = Parse<double>(hitbox->params(elem.first));
+					continue;
+				}
+				json[U"Body"][hitbox->name][elem.first] = hitbox->params(elem.first);
+			}
+		}
+
 		Optional<FilePath> path = Dialog::SaveFile({ FileFilter::JSON()});
 		if (path)
 		{
@@ -589,6 +644,7 @@ void ErasePartsOperate::update(double dt)
 		{
 			GetComponent<EditParts>()->releaseParts();
 			GetComponent<RotateCenter>()->releaseParts();
+			GetComponent<LightUpParts>()->releaseParts();
 			GetComponent<PartsColliders>()->removeColliderOf(p);
 			p->removeSelf<Parts>();
 		}
@@ -689,14 +745,47 @@ Vec2 LoadJson::_getAbsPos(Parts* parts)
 	return Parse<Vec2>(parts->params(U"Position"))+_getAbsPos(parts->PartsParent);
 }
 
+void MakeHitbox::start()
+{
+	setting = false;
+	startPos = nullptr;
+	priority.setDraw(Math::Inf);
+}
+
 void MakeHitbox::update(double dt)
 {
+	if (not setting)return;
 
+	if (startPos==nullptr and MouseL.pressedDuration().count()>0.2)
+	{
+		startPos = new Vec2{ Cursor::PosF() };
+	}
+
+	if (startPos != nullptr)
+	{
+		rect = Rect{ startPos->asPoint(),Cursor::Pos() - startPos->asPoint() };
+		if (MouseL.up())
+		{
+			size_t w = rect.w;
+			size_t h = rect.h;
+			Image image{ w,h,ColorF{Palette::Red,0.3} };
+			Optional<FilePath> path = Dialog::SaveFile({ FileFilter::PNG() });
+			if (path)
+			{
+				image.save(*path);
+				HitboxParts* hitbox = AddComponent<HitboxParts>(new HitboxParts(*path));
+				hitbox->set_params(U"Position", Format(*startPos+rect.size/2));
+				hitboxs << hitbox;
+			}
+			startPos = nullptr;
+		}
+	}
 }
 
 void MakeHitbox::draw()const
 {
-
+	if (startPos==nullptr)return;
+	rect.draw(ColorF{ Palette::Red,0.3 });
 }
 
 void MakeRectF::update(double dt)
