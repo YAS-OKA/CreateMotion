@@ -16,6 +16,7 @@ namespace mj
 		mp{U"Z",U"-10"},
 		mp{U"Scale",U"1"},
 	};
+
 	class Parts;
 	//画面内にPartsを追加する
 	class RegisterParts:public component::Component
@@ -247,6 +248,7 @@ namespace mj
 		void start()override;
 		void update(double dt)override;
 		void draw()const override;
+		void releaseParts(Parts* parts);
 
 		Vec2* startPos;
 		bool setting;

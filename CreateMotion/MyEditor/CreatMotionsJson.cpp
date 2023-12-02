@@ -211,6 +211,7 @@ void HitboxParts::update(double dt)
 void HitboxParts::draw()const
 {
 	if (not egaku)return;
+	Print << 1;
 	tex.drawAt(absPos());
 }
 
@@ -646,7 +647,8 @@ void ErasePartsOperate::update(double dt)
 			GetComponent<RotateCenter>()->releaseParts();
 			GetComponent<LightUpParts>()->releaseParts();
 			GetComponent<PartsColliders>()->removeColliderOf(p);
-			p->removeSelf<Parts>();
+			if (GetComponent<MakeHitbox>()->setting)p->removeSelf<HitboxParts>();
+			else p->removeSelf<Parts>();
 		}
 	}
 
@@ -756,6 +758,8 @@ void MakeHitbox::update(double dt)
 {
 	if (not setting)return;
 
+	auto t = GetComponent<EditorsCamera>()->getTransformer2D(true);
+
 	if (startPos==nullptr and MouseL.pressedDuration().count()>0.2)
 	{
 		startPos = new Vec2{ Cursor::PosF() };
@@ -784,8 +788,20 @@ void MakeHitbox::update(double dt)
 
 void MakeHitbox::draw()const
 {
-	if (startPos==nullptr)return;
+	if (startPos == nullptr)return;
 	rect.draw(ColorF{ Palette::Red,0.3 });
+}
+
+void MakeHitbox::releaseParts(Parts* releaseParts)
+{
+	for (auto it=hitboxs.begin();it!=hitboxs.end();)
+	{
+		if (releaseParts == *it)
+		{
+			it = hitboxs.erase(it);
+		}
+		else it++;
+	}
 }
 
 void MakeRectF::update(double dt)

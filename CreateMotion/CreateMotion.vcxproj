@@ -116,8 +116,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="Movements.cpp" />
+    <ClCompile Include="MyEditor\Camera.cpp" />
     <ClCompile Include="MyEditor\CreatMotionsJson.cpp" />
+    <ClCompile Include="MyEditor\Draw.cpp" />
+    <ClCompile Include="MyEditor\DrawManager.cpp" />
+    <ClCompile Include="MyEditor\MotionEditor.cpp" />
     <ClCompile Include="MyEditor\MyEditor.cpp" />
+    <ClCompile Include="MyEditor\Object.cpp" />
+    <ClCompile Include="MyEditor\Transform.cpp" />
+    <ClCompile Include="Prg\Action.cpp" />
+    <ClCompile Include="Prg\Actions.cpp" />
+    <ClCompile Include="Prg\Condition.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -318,10 +328,23 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimationSystem.h" />
+    <ClInclude Include="MotionLoader.h" />
+    <ClInclude Include="Movements.h" />
+    <ClInclude Include="MyEditor\Camera.h" />
     <ClInclude Include="MyEditor\CreatMotionsJson.h" />
+    <ClInclude Include="MyEditor\Draw.h" />
+    <ClInclude Include="MyEditor\DrawManager.h" />
+    <ClInclude Include="MyEditor\EC.hpp" />
     <ClInclude Include="MyEditor\Entity.hpp" />
+    <ClInclude Include="MyEditor\MotionEditor.h" />
     <ClInclude Include="MyEditor\MyEditor.h" />
+    <ClInclude Include="MyEditor\Object.h" />
+    <ClInclude Include="MyEditor\Transform.h" />
     <ClInclude Include="MyEditor\__init__.h" />
+    <ClInclude Include="Prg\Action.h" />
+    <ClInclude Include="Prg\Actions.h" />
+    <ClInclude Include="Prg\Condition.h" />
+    <ClInclude Include="Prg\Init.h" />
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>

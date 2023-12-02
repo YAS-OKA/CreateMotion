@@ -1,8 +1,16 @@
 ﻿{
   "Body": {
-    "body": {
+    "Hitbox": {
       "Parent": "body",
-      "Position": "(0, 0)",
+      "Position": "(-24.33331, -18.63667)",
+      "RotateCenter": "(0,0)",
+      "Scale": 1.0,
+      "TexturePath": "Characters/annna/hitbox.png",
+      "Z": -10.0
+    },
+    "body": {
+      "Parent": "__Main__",
+      "Position": "(600, 350)",
       "RotateCenter": "(-22.10762, -104.03595)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/body.png",
@@ -38,7 +46,7 @@
       "RotateCenter": "(-0.72538, 206.00299)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/lfoot.png",
-      "Z": -4.0
+      "Z": -9.0
     },
     "lhand": {
       "Parent": "llower_arm",
@@ -57,12 +65,12 @@
       "Z": -15.0
     },
     "lshin": {
-      "Parent": "body",
+      "Parent": "lthigh",
       "Position": "(0, 0)",
       "RotateCenter": "(-1.45074, 79.06451)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/lshin.png",
-      "Z": -5.0
+      "Z": -9.5
     },
     "lsholder": {
       "Parent": "body",
@@ -72,13 +80,13 @@
       "TexturePath": "Characters/annna/lsholder.png",
       "Z": -5.0
     },
-    "ltihgh": {
+    "lthigh": {
       "Parent": "waist",
       "Position": "(0, 0)",
       "RotateCenter": "(-3.62676, -50.77536)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/ltihgh.png",
-      "Z": -6.0
+      "Z": -10.0
     },
     "lupper_arm": {
       "Parent": "lsholder",
@@ -102,7 +110,7 @@
       "RotateCenter": "(-49.32458, 199.47471)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/rankle.png",
-      "Z": -10.0
+      "Z": -8.9
     },
     "rfoot": {
       "Parent": "rankle",
@@ -110,20 +118,20 @@
       "RotateCenter": "(-50.05001, 206.0031)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/rfoot.png",
-      "Z": -4.0
+      "Z": -8.4
     },
     "rhand": {
       "Parent": "rlower_arm",
       "Position": "(0, 0)",
       "RotateCenter": "(-120.94173, -28.60985)",
       "Scale": 1.0,
-      "TexturePath": "Characters/annna/rhand.png",
+      "TexturePath": "Characters/annna/rhand_back.png",
       "Z": 20.0
     },
     "rlower_arm": {
       "Parent": "rupper_arm",
       "Position": "(0, 0)",
-      "RotateCenter": "(-93.89237, -73.3453)",
+      "RotateCenter": "(-94.54407, -73.12809)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/rlower_arm.png",
       "Z": 15.0
@@ -131,10 +139,10 @@
     "rshin": {
       "Parent": "rthigh",
       "Position": "(0, 0)",
-      "RotateCenter": "(-44.97241, 77.61378)",
+      "RotateCenter": "(-52.36607, 82.57721)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/rshin.png",
-      "Z": -5.0
+      "Z": -8.5
     },
     "rsholder": {
       "Parent": "body",
@@ -150,7 +158,7 @@
       "RotateCenter": "(-47.8739, -50.77532)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/rthigh.png",
-      "Z": -6.0
+      "Z": -9.0
     },
     "rupper_arm": {
       "Parent": "rsholder",
@@ -166,7 +174,7 @@
       "RotateCenter": "(-22.36766, -67.62328)",
       "Scale": 1.0,
       "TexturePath": "Characters/annna/skirt.png",
-      "Z": -4.0
+      "Z": -8.0
     },
     "waist": {
       "Parent": "body",

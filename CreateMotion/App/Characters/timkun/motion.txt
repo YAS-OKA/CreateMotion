@@ -1,0 +1,10 @@
+#test
+ChangeScale,body,2,2,1
+ChangeScale,rarm,4,-6,1
+Rotate,rarm,30,1
+ChangeScale,larm,4,-6,1
+Rotate,larm,-30,1
+
+Wait,0.7
+
+Base,body,1

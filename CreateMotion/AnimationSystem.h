@@ -23,7 +23,6 @@ public:
 
 class Character;
 
-
 class Move {
 public:
 	Move() {}
@@ -32,7 +31,11 @@ public:
 
 	virtual void update(Character* character, double t = Scene::DeltaTime()) = 0;
 
+	virtual void finalize(Character* character) {};
+
 	virtual bool isActive() = 0;
+
+	bool finalized = false;
 };
 
 class Motion :public Move {
@@ -77,7 +80,6 @@ public:
 	}
 
 	void update(Character* character, double t = Scene::DeltaTime())override {
-
 		if (parallel) {
 
 			active = false;
@@ -86,6 +88,12 @@ public:
 				if (move->isActive()) {
 					move->update(character, t * speed);
 					active = true;
+				}
+				else if(not move->finalized)
+				{
+					//終了処理
+					move->finalize(character);
+					move->finalized = true;
 				}
 			}
 		}
@@ -105,7 +113,7 @@ public:
 			}
 		}
 
-		if (not active && loop) {
+		if ((not active) && loop) {
 			start(character);
 			active = true;
 		}
@@ -161,7 +169,6 @@ public:
 
 class Joint :public Movable {
 public:
-
 	String textureName;
 
 	Array<Joint*>joints;
@@ -176,7 +183,7 @@ public:
 	void add(Joint* joint) {
 		joints << joint;
 	}
-
+	//自分と子ジョイントをすべて返す
 	Array<Joint*> getAll()
 	{
 		Array<Joint*>result;
@@ -191,7 +198,7 @@ public:
 	//Moveのあと
 	void update() {
 		const Transformer2D t1{ Mat3x2::Translate(pos) };//中心をずらす
-		const Transformer2D t2{ Mat3x2::Rotate(angle,rotatePos) };//回転
+		const Transformer2D t2= Transformer2D{ Mat3x2::Rotate(angle,rotatePos) };// { Mat3x2::Identity() };
 		mat = Graphics2D::GetLocalTransform();//変換行列を保存
 		for (auto& joint : joints) {
 			joint->update();
@@ -201,6 +208,7 @@ public:
 	void draw()const override {
 		Transformer2D t{ mat };
 		TextureAsset{ textureName }.resized(size).drawAt({ 0,0 }, color);
+
 	}
 
 	void drawDebug()const override {
@@ -223,6 +231,8 @@ class Character {
 public:
 
 	std::unique_ptr<Character> base = nullptr;
+	//Hitboxパーツがある場合はこれがtrueになる
+	bool hasHitboxParts = false;
 
 	class Body {
 	public:
@@ -239,7 +249,7 @@ public:
 	double angle = 0_deg;
 	bool mirror = false;
 	double scale = 1.0;
-
+	//first->name second->joint,parentName
 	HashTable<String, Body>table;
 
 	Joint* joint = nullptr;
@@ -247,10 +257,10 @@ public:
 	Character(double scale = 1.0) :scale{ scale } {}
 
 	Character(const JSON& json, double scale = 1.0) :scale{ scale } {
-
 		for (const auto& body : json[U"Body"])
 		{
 			String name = body.key;
+			if (name == U"Hitbox")hasHitboxParts = true;;
 			const auto& object = json[U"Body"][name];
 			set(name, object[U"Parent"].getString(), object[U"Position"].get<Vec2>(), object[U"RotateCenter"].get<Vec2>(), object[U"TexturePath"].getString(), object[U"Z"].get<double>(), object[U"Scale"].get<double>());
 		}
@@ -291,6 +301,10 @@ public:
 		base->mirror = mirror;
 		base->scale = scale;
 		base->table = table;
+		for (auto& joint : base->table)
+		{
+			joint.second.joint.joints.clear();
+		}
 		base->complete();
 	}
 
@@ -307,7 +321,8 @@ public:
 	}
 
 	void update(double dt = Scene::DeltaTime()) {
-
+		if (KeyZ.pressed())for (auto& joint : getBase()->get(U"base-body")->getAll())Print << joint->pos;
+		if (KeyX.pressed())Print << joint;
 		for (auto it = motions.begin(); it != motions.end();)
 		{
 			if (not it->isActive())
@@ -353,12 +368,11 @@ public:
 		double max = -Math::Inf;
 		for (auto it = table.begin(); it != table.end(); ++it)
 		{
-			max = Max(it->second.joint.getMaxY(), max);
+			if ((not hasHitboxParts) or it->first == U"Hitbox")max = Max(it->second.joint.getMaxY(), max);
 		}
 		return max;
 	}
 };
-
 
 class TimeMove :public Move {
 public:
